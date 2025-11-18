@@ -1,8 +1,12 @@
+// mock data
+const { RainStatus, SunlightLevel } = require("../../utils/enums");
+
 module.exports = async (req, res, next) => {
-  return res.status(200).json({
-    success: true,
-    data: {
-      test: "test",
-    },
+  res.json({
+    humidity: 78,
+    rain: RainStatus.RAINING,
+    sun: SunlightLevel.MODERATE,
+    temperature: 29,
+    dryness: 3,
   });
 };

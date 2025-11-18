@@ -1,8 +1,7 @@
-const getWeatherStatus = require("./weather/getWeatherStatus");
-const getRainProtectorStatus = require("./rainProtector/getRainProtectorStatus");
-const updateRainProtector = require("./rainProtector/updateRainProtector");
+const weather = require("./weather");
+const rainProtector = require("./rainProtector");
+
 module.exports = {
-  getWeatherStatus,
-  getRainProtectorStatus,
-  updateRainProtector,
+  weather,
+  rainProtector,
 };
