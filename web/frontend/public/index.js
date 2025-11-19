@@ -118,25 +118,165 @@ function updateLightCard(light) {
 
     const lightCard = document.getElementById("light-card");
     const lightStatus = document.getElementById("light-status");
+    const exp = document.getElementById("explosion-frame");
 
     switch(light) {
         case "very_high":
+
+            lightStatus.textContent = "Highhhhhh";
+
+            lightCard.classList.remove("light-card--high", "light-card--mid", "light-card--low", "light-card--none")
+            lightCard.classList.add("light-card--high")
+
+            lightCard.classList.remove("opacity-100", "duration-500")
+            lightCard.classList.add("animate-spin", "opacity-0", "duration-1000");
+            addTemporaryExplosion(exp);
+
             break;
+
         case "high":
+
+            lightCard.classList.remove("animate-spin", "opacity-0", "duration-1000");
+
+            lightCard.classList.remove("light-card--high", "light-card--mid", "light-card--low", "light-card--none")
+            lightCard.classList.add("opacity-100", "light-card--high")
+
+            lightStatus.textContent = "High";
+
             break;
+
         case "moderate":
+
+            lightCard.classList.remove("animate-spin", "opacity-0", "duration-1000");
+
+            lightCard.classList.remove("light-card--high", "light-card--mid", "light-card--low", "light-card--none")
+            lightCard.classList.add("opacity-100", "light-card--mid")
+
+            lightStatus.textContent = "Mid";
+
             break;
+
+        case "low":
+            
+            lightCard.classList.remove("animate-spin", "opacity-0", "duration-1000");
+
+            lightCard.classList.remove("light-card--high", "light-card--mid", "light-card--low", "light-card--none")
+            lightCard.classList.add("opacity-100", "duration-500", "light-card--low")
+
+            lightStatus.textContent = "Low";
+
+            break;
+
+        case "no_sun":
+
+            lightCard.classList.remove("animate-spin", "opacity-0", "duration-1000");
+
+            lightCard.classList.remove("light-card--high", "light-card--mid", "light-card--low", "light-card--none")
+            lightCard.classList.add("opacity-100", "duration-500", "light-card--none")
+
+            lightStatus.textContent = "None";
+
+            break;
+
+        default:
+            lightCard.classList.remove("animate-spin", "opacity-0", "duration-1000");
+
+            lightCard.classList.remove("light-card--high", "light-card--mid", "light-card--low", "light-card--none")
+            lightCard.classList.add("opacity-100", "light-card--none")
+
+            lightStatus.textContent = "-";
     }
 
 }
 
+function addTemporaryExplosion(targetElement) {
+    
+    const explosion = document.createElement('div');
+    explosion.className = 'absolute inset-0 z-50 flex items-center justify-center pointer-events-none';
+    explosion.innerHTML = `
+        <img src="img/boom-explosion.gif" class="w-full h-full" />
+    `;
+    
+    targetElement.appendChild(explosion);
+    
+    setTimeout(() => {
+        explosion.remove();
+    }, 800);
+}
+
+// === API call === //
+
+const API_BASE_URL = 'http://localhost:3000/api';
+
+async function getWeatherStatus() {
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/`);
+        const data = await response.json();
+        
+        if (response.status == 200) {
+            return data;
+        } else {
+            throw new Error(data.message || 'Failed to get weather status');
+        }
+        
+    } catch (error) {
+        console.error('Get weather status failed:', error);
+        throw new Error(data.message || 'Failed to get weather status');
+    }
+
+}
+
+async function getProtectorStatus() {
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/rainProtector/status/`);
+        const data = await response.json();
+        
+        if (response.status == 200) {
+            return data;
+        } else {
+            throw new Error(data.message || 'Failed to get protector status');
+        }
+        
+    } catch (error) {
+        console.error('Get protector status failed:', error);
+        throw new Error(data.message || 'Failed to get protector status');
+    }
+
+}
+
+async function updateRainProtector() {
+
+    // structure แป่ก ๆ
+    try {
+        const response = await fetch(`${API_BASE_URL}/rainProtector/`);
+        const data = await response.json();
+        
+        if (response.status == 200) {
+            return data;
+        } else {
+            throw new Error(data.message || 'Failed to update protector');
+        }
+        
+    } catch (error) {
+        console.error('Update protector failed:', error);
+        throw new Error(data.message || 'Failed to update protector');
+    }
+
+
+}
+
+// === Main function === //
+
 function refresh(text = "") {
 
+    // loading state
+
+
+
 }
 
-function pushActive(status) {
-
-}
 
 function pushNotification() {
 

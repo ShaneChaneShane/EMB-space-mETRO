@@ -20,7 +20,7 @@
             <p class="text-[32px] font-bold left-0 inline-block hover:animate-spin">Dashboard</p>
             <div class="bg-(--tcolor-base1) w-11 h-11 rounded-full 
             flex justify-center items-center card-shadow active:bg-(--tcolor-base2) z-60"
-            onclick="updateDrynessCard(0)">
+            onclick="updateLightCard(`very_high`)">
                 <img src="img/refresh.png" alt="refresh" class="w-9 h-9 hover:animate-spin z-70">
             </div>
         </div>
@@ -32,7 +32,8 @@
                 <p class="txt-label">Status:</p>
                 <p id="status-text" class="txt-data text-(--cur-state-dark) duration-300">Active</p>
             </div>
-            <div id="status-botton" class="h-fill w-[110px] flex flex-col justify-center items-center p-2 space-y-1">
+            <div id="status-botton" class="h-fill w-[110px] flex flex-col justify-center items-center p-2 space-y-1"
+            onclick="updateLightCard(`low`)">
                 <div class="bg-(--tcolor-solid) active:bg-(--tcolor-base2) rounded-full w-17 h-17 p-3 hover:animate-bounce duration-300">
                    <div class="icon-colored" style="--icon-color: var(--ncur-state-light); --icon-url: url('img/power.svg')"></div>
                 </div>
@@ -56,7 +57,7 @@
             </div>
         </div>
 
-        <div class="w-full h-[135px] grid grid-cols-2 gap-2.5 ">
+        <div class="w-full h-[135px] grid grid-cols-2 gap-2.5">
 
             <!-- dryness-card -->
             <div id="dryness-card" class="w-full h-full bg-(--tcolor-white) border-(--tcolor-base2) rounded-2xl card-shadow border-[3px] hover:animate-spin
@@ -74,23 +75,23 @@
             </div>
 
             <!-- light-card -->
-            <div id="light-card" class="w-full h-full bg-(--lc-bg) border-(--lc-acc1) rounded-2xl card-shadow border-[3px]
-            light-card--high relative overflow-hidden -z-50">
-                <div class="-space-y-2 px-4 py-2 z-50">
-                    <p class="txt-label">Light</p>
-                    <p id="light-status" class="txt-data">Highhhhhhhh</p>
-                </div> 
-                <div class="absolute left-0 top-0 z-50 w-full h-full">
-                    <img src="img/boom-explosion.gif" class="w-full h-full"/>
-                </div>  
-                <div class="absolute w-fit h-fit -right-1/4 -bottom-2/3 -z-30">
-                    <div id="light-sun3" class="rounded-full flex bg-(--lc-acc3) w-[171px] h-[171px] -z-20 items-center justify-center">
-                        <div id="light-sun2" class="rounded-full flex bg-(--lc-acc2) w-[127px] h-[127px] z-0 items-center justify-center">
-                            <div id="light-sun1" class="rounded-full flex bg-(--lc-acc1) w-[83px] h-[83px] z-10"></div>
+            <div id="explosion-frame" class="w-full h-full relative">
+                <div id="light-card" class="w-full h-full bg-(--lc-bg) border-(--lc-acc1) rounded-2xl card-shadow border-[3px]
+                light-card--high relative overflow-hidden -z-50 duration-500">
+                    <div class="-space-y-2 px-4 py-2 z-50">
+                        <p class="txt-label">Light</p>
+                        <p id="light-status" class="txt-data">High</p>
+                    </div> 
+                    <div class="absolute w-fit h-fit -right-1/4 -bottom-2/3 -z-30">
+                        <div id="light-sun3" class="rounded-full flex bg-(--lc-acc3) w-[171px] h-[171px] -z-20 items-center justify-center">
+                            <div id="light-sun2" class="rounded-full flex bg-(--lc-acc2) w-[127px] h-[127px] z-0 items-center justify-center">
+                                <div id="light-sun1" class="rounded-full flex bg-(--lc-acc1) w-[83px] h-[83px] z-10"></div>
+                            </div>
                         </div>
-                    </div>
-                </div>             
+                    </div>             
+                </div>
             </div>
+                
         </div>
 
         <!-- last update -->
