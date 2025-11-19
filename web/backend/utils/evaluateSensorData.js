@@ -1,6 +1,6 @@
 const { DrynessLevel, SunlightLevel, RainStatus } = require("./enums");
 
-module.exports = async function evaluateSensorData(
+module.exports = function evaluateSensorData(
   humidityEnv,
   humidityClothes,
   rain,
@@ -10,7 +10,7 @@ module.exports = async function evaluateSensorData(
   // TO-DO: IMPLEMENT REAL LOGIC HERE
 
   // SOME IMAGINARY LOGIC TO DETERMINE  RAIN
-  const rainStatus = rain > 500 ? RainStatus.RAINING : RainStatus.NOT_RAINING;
+  const rainStatus = rain > 500 ? RainStatus.RAINING : RainStatus.NO_RAIN;
 
   // SOME IMAGINARY LOGIC TO DETERMINE SUNLIGHT LEVEL
   const sunlightLevel =

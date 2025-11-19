@@ -4,18 +4,28 @@ const { RainStatus, SunlightLevel } = require("../../utils/enums");
 const evaluateSensorData = require("../../utils/evaluateSensorData");
 
 module.exports = async (req, res, next) => {
-  const data = await getWeatherFromBlynk();
-  const evaluatedData = await evaluateSensorData(
-    data.humidityEnv,
-    data.humidityClothes,
-    data.rain,
-    data.temperature,
-    data.light
-  );
+  try {
+    const result = await getWeatherFromBlynk();
+    if (!result.success) {
+      throw new Error(result.message);
+    }
+    const data = result.data;
+    const evaluatedData = evaluateSensorData(
+      data.humidityEnv,
+      data.humidityClothes,
+      data.rain,
+      data.temperature,
+      data.light
+    );
 
-  // TO-DO: error handling: when blynk data can't be fetched or evaluated
-  return res.status(200).json({
-    success: true,
-    data: evaluatedData,
-  });
+    return res.status(200).json({
+      success: true,
+      data: evaluatedData,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
 };

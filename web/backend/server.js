@@ -9,6 +9,7 @@ const app = express();
 dotenv.config({ path: "./config/config.env" });
 
 // libraries
+app.use(express.json());
 app.use(helmet());
 app.use(xss());
 app.use(hpp());
