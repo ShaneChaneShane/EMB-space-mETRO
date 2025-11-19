@@ -11,8 +11,11 @@
 
   <body class="flex justify-center min-h-screen md:items-center -z-100">
 
+    <!-- top layer  -->
+
+
     <!-- frame -->
-    <div class="w-full min-w-[340px] max-w-[440px] h-fit
+    <div id="base" class="w-full min-w-[340px] max-w-[440px] h-fit
     px-5 py-4 flex flex-col space-y-3">
 
         <!-- title -->
@@ -20,7 +23,7 @@
             <p class="text-[32px] font-bold left-0 inline-block hover:animate-spin">Dashboard</p>
             <div class="bg-(--tcolor-base1) w-11 h-11 rounded-full 
             flex justify-center items-center card-shadow active:bg-(--tcolor-base2) z-60"
-            onclick="refresh()">
+            onclick="test1()">
                 <img src="img/refresh.png" alt="refresh" class="w-9 h-9 hover:animate-spin z-70">
             </div>
         </div>
@@ -33,7 +36,7 @@
                 <p id="status-text" class="txt-data text-(--cur-state-dark) duration-300">Active</p>
             </div>
             <div id="status-botton" class="h-fill w-[110px] flex flex-col justify-center items-center p-2 space-y-1"
-            onclick="changeProtectorState()">
+            onclick="test2()">
                 <div class="bg-(--tcolor-solid) active:bg-(--tcolor-base2) rounded-full w-17 h-17 p-3 hover:animate-bounce duration-300">
                    <div class="icon-colored" style="--icon-color: var(--ncur-state-light); --icon-url: url('img/power.svg')"></div>
                 </div>
@@ -95,7 +98,7 @@
         </div>
 
         <!-- last update -->
-        <div class="py-4">
+        <div id="bottom-box" class="py-4 relative">
             <p id="last-update" class="text-[16px] text-(--tcolor-base1)">Last update: 17 Nov 2025 11:32 PM</p>
         </div>
 

@@ -7,7 +7,10 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
-    --color-red-400: oklch(70.4% 0.191 22.216);
+    --color-red-500: oklch(63.7% 0.237 25.331);
+    --color-red-800: oklch(44.4% 0.177 26.899);
+    --color-green-500: oklch(72.3% 0.219 149.579);
+    --color-green-800: oklch(44.8% 0.119 151.328);
     --spacing: 0.25rem;
     --breakpoint-2xl: 96rem;
     --font-weight-bold: 700;
@@ -212,6 +215,27 @@
   .-bottom-2\/3 {
     bottom: calc(calc(2/3 * 100%) * -1);
   }
+  .-bottom-4 {
+    bottom: calc(var(--spacing) * -4);
+  }
+  .bottom-0 {
+    bottom: calc(var(--spacing) * 0);
+  }
+  .bottom-1 {
+    bottom: calc(var(--spacing) * 1);
+  }
+  .bottom-2 {
+    bottom: calc(var(--spacing) * 2);
+  }
+  .bottom-4 {
+    bottom: calc(var(--spacing) * 4);
+  }
+  .bottom-20 {
+    bottom: calc(var(--spacing) * 20);
+  }
+  .-left-10 {
+    left: calc(var(--spacing) * -10);
+  }
   .left-0 {
     left: calc(var(--spacing) * 0);
   }
@@ -329,6 +353,10 @@
   .border-collapse {
     border-collapse: collapse;
   }
+  .translate-x-100 {
+    --tw-translate-x: calc(var(--spacing) * 100);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
   .-translate-y-1 {
     --tw-translate-y: calc(var(--spacing) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
@@ -342,6 +370,9 @@
   }
   .animate-spin {
     animation: var(--animate-spin);
+  }
+  .cursor-not-allowed {
+    cursor: not-allowed;
   }
   .resize {
     resize: both;
@@ -461,9 +492,6 @@
   .bg-\(--tcolor-white\) {
     background-color: var(--tcolor-white);
   }
-  .bg-red-400 {
-    background-color: var(--color-red-400);
-  }
   .p-2 {
     padding: calc(var(--spacing) * 2);
   }
@@ -481,6 +509,9 @@
   }
   .py-4 {
     padding-block: calc(var(--spacing) * 4);
+  }
+  .text-\[8px\] {
+    font-size: 8px;
   }
   .text-\[16px\] {
     font-size: 16px;
@@ -503,6 +534,12 @@
   }
   .text-\(--tcolor-base1\) {
     color: var(--tcolor-base1);
+  }
+  .text-green-800 {
+    color: var(--color-green-800);
+  }
+  .text-red-800 {
+    color: var(--color-red-800);
   }
   .underline {
     text-decoration-line: underline;
@@ -531,6 +568,10 @@
   .duration-1000 {
     --tw-duration: 1000ms;
     transition-duration: 1000ms;
+  }
+  .select-none {
+    -webkit-user-select: none;
+    user-select: none;
   }
   .hover\:animate-bounce {
     &:hover {

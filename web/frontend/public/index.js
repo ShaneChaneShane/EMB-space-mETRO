@@ -190,7 +190,6 @@ function updateLightCard(light) {
 }
 
 function addTemporaryExplosion(targetElement) {
-    
     const explosion = document.createElement('div');
     explosion.className = 'absolute inset-0 z-50 flex items-center justify-center pointer-events-none';
     explosion.innerHTML = `
@@ -248,7 +247,7 @@ async function getProtectorStatus() {
 
 async function updateRainProtector(status) {
 
-    // structure แป่ก ๆ
+    // structure แป่ก ๆ edit later
     try {
         const response = await fetch(`${API_BASE_URL}/rainProtector/`);
         const data = await response.json();
@@ -270,18 +269,55 @@ async function updateRainProtector(status) {
 // === Helped function === //
 
 function loadingScreen(state = "") {
+    const base = document.getElementById("base");
 
+    if (state == "start") { 
+        base.classList.add("animate-spin", "cursor-not-allowed", "pointer-events-none", "select-none");
+
+        // for test
+        // setTimeout(() => {
+        //     base.classList.remove("animate-spin", "cursor-not-allowed", "pointer-events-none", "select-none");
+        // }, 2500);
+
+    } else if (state == "stop") {
+        base.classList.remove("animate-spin", "cursor-not-allowed", "pointer-events-none", "select-none");
+    }
+    
 }
 
-function pushNotification(isGood, text) {
+function pushNotification(txt, isGood = true) {
+
+    const color = (isGood) ? "text-green-800" : "text-red-800"
+
+    // const noti = document.createElement('p');
+    // noti.className = 'absolute bottom-20 duration-1000 text-[8px]' + color;
+    // noti.textContent = txt;
+    
+    // const bttm = document.getElementById("bottom-box");
+    // bttm.appendChild(noti);
+    
+    // setTimeout(() => {
+    //     noti.classList.add("translate-x-100")
+    // }, 50);
+
+    const bttm = document.getElementById("last-update");
+    const update = bttm.textContent;
+
+    bttm.classList.remove("text-(--tcolor-base1)");
+    bttm.classList.add("font-bold", color);
+    bttm.textContent = txt;
+
+    setTimeout(() => {
+        bttm.classList.remove("font-bold", color);
+        bttm.classList.add("text-(--tcolor-base1)");
+        bttm.textContent = update;
+    }, 5000);
 
 }
 
 function getCurrentDisplayState() {
     const statusText = document.getElementById('status-text').textContent.toLowerCase();
-    return statusText; 
-
-    // active/inactive
+    return statusText; // active/inactive
 }
 
 // === Main function === //
@@ -309,17 +345,20 @@ async function refresh() {
 
     const status = protectorData.data.isOpen; // active, inactive, process
 
+    // exit loading screen
+    loadingScreen("stop");
+
     // update UI
     updateStatusCard(status);
     updateRaingCard(isRaining, temp, humid);
     updateDrynessCard(dryness);
     updateLightCard(light);
 
-    // push notification
-    pushNotification(true, "Refresh successully");
+    // last update
+    document.getElementById('last-update').textContent = 'Last update: ' + new Date().toLocaleString();
 
-    // exit loading screen
-    loadingScreen("stop");
+    // push notification
+    pushNotification("Refresh successully", true);
 
 }
 
@@ -330,11 +369,60 @@ async function changeProtectorState(current) {
     try {
         const res = updateRainProtector(toState);
     } catch (error) {
-        pushNotification(false, "Cannot change protector state")
+        pushNotification("Cannot change protector state", false)
     }
-    
-    await refresh();
+
+    setTimeout(async () => await refresh(), 1000);
 
 }
+
+// for testing
+async function test1() {
+
+    // loading screen
+    loadingScreen("start");
+
+    setTimeout(() => {
+        loadingScreen("stop")
+
+        // update UI
+        updateStatusCard("inactive");
+        updateRaingCard(true, 100, 0.8);
+        updateDrynessCard(3);
+        updateLightCard("very_high");
+
+        // last update
+        document.getElementById('last-update').textContent = 'Last update: ' + new Date().toLocaleString();
+
+        // push notification
+        pushNotification("Refresh successully", true);
+        }, 1500);
+
+}
+
+async function test2() {
+
+    // loading screen
+    loadingScreen("start");
+
+    setTimeout(() => {
+        loadingScreen("stop")
+
+        // update UI
+        updateStatusCard("active");
+        updateRaingCard(false, 8, 10);
+        updateDrynessCard(1);
+        updateLightCard("moderate");
+
+        // last update
+        document.getElementById('last-update').textContent = 'Last update: ' + new Date().toLocaleString();
+
+        // push notification
+        pushNotification("Refresh successully", true);
+        }, 1500);
+
+}
+
+
 
 
