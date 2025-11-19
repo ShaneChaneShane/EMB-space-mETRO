@@ -246,7 +246,7 @@ async function getProtectorStatus() {
 
 }
 
-async function updateRainProtector() {
+async function updateRainProtector(status) {
 
     // structure แป่ก ๆ
     try {
@@ -267,17 +267,74 @@ async function updateRainProtector() {
 
 }
 
+// === Helped function === //
+
+function loadingScreen(state = "") {
+
+}
+
+function pushNotification(isGood, text) {
+
+}
+
+function getCurrentDisplayState() {
+    const statusText = document.getElementById('status-text').textContent.toLowerCase();
+    return statusText; 
+
+    // active/inactive
+}
+
 // === Main function === //
 
-function refresh(text = "") {
+async function refresh() {
 
-    // loading state
+    // loading screen
+    loadingScreen("start");
 
+    // get data
+    try {
+        const weatherData = await getWeatherStatus();
+        const protectorData = await getProtectorStatus();
+    } catch (error) {
+        pushNotification(false, "Cannot fetch data")
+    }
+    
+    const humid = weatherData.data.humidity || 0;
+    const isRaining = weatherData.data.raining;
+    isRaining = (isRaining == "raining") ? true : false;
 
+    const light = weatherData.data.sun || "";
+    const temp = weatherData.data.temperature || 0;
+    const dryness = weatherData.data.dryness || 0;
+
+    const status = protectorData.data.isOpen; // active, inactive, process
+
+    // update UI
+    updateStatusCard(status);
+    updateRaingCard(isRaining, temp, humid);
+    updateDrynessCard(dryness);
+    updateLightCard(light);
+
+    // push notification
+    pushNotification(true, "Refresh successully");
+
+    // exit loading screen
+    loadingScreen("stop");
+
+}
+
+async function changeProtectorState(current) {
+
+    toState = (current == "active") ? "inactive" : "active" ;
+
+    try {
+        const res = updateRainProtector(toState);
+    } catch (error) {
+        pushNotification(false, "Cannot change protector state")
+    }
+    
+    await refresh();
 
 }
 
 
-function pushNotification() {
-
-}
