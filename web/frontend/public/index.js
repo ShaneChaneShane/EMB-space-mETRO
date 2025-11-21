@@ -94,7 +94,7 @@ function updateRaingCard(isRaining = false, temp = 0, humid = 0) {
     }
 
     rainingTemp.textContent = temp + " °C";
-    rainingHumid.textContent = "Humidity: " + humid*100 + "%";
+    rainingHumid.textContent = "Humidity: " + humid + "%";
 
 }
 
@@ -205,12 +205,12 @@ function addTemporaryExplosion(targetElement) {
 
 // === API call === //
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 async function getWeatherStatus() {
 
     try {
-        const response = await fetch(`${API_BASE_URL}/`);
+        const response = await fetch(`${API_BASE_URL}/weather`);
         const data = await response.json();
         
         if (response.status == 200) {
@@ -229,7 +229,7 @@ async function getWeatherStatus() {
 async function getProtectorStatus() {
 
     try {
-        const response = await fetch(`${API_BASE_URL}/rainProtector/status/`);
+        const response = await fetch(`${API_BASE_URL}/rainProtector/status`);
         const data = await response.json();
         
         if (response.status == 200) {
@@ -247,12 +247,20 @@ async function getProtectorStatus() {
 
 async function updateRainProtector(status) {
 
-    // structure แป่ก ๆ edit later
     try {
-        const response = await fetch(`${API_BASE_URL}/rainProtector/`);
+        const response = await fetch(`${API_BASE_URL}/rainProtector`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                shouldOpen: status  
+            })
+        });
+        
         const data = await response.json();
         
-        if (response.status == 200) {
+        if (response.status == 200 && data.success) {
             return data;
         } else {
             throw new Error(data.message || 'Failed to update protector');
@@ -260,9 +268,8 @@ async function updateRainProtector(status) {
         
     } catch (error) {
         console.error('Update protector failed:', error);
-        throw new Error(data.message || 'Failed to update protector');
+        throw error;
     }
-
 
 }
 
@@ -324,55 +331,85 @@ function getCurrentDisplayState() {
 
 async function refresh() {
 
-    // loading screen
-    loadingScreen("start");
+    console.log("refresh")
 
-    // get data
     try {
+        // loading screen
+        loadingScreen("start");
+
+        // get data
         const weatherData = await getWeatherStatus();
         const protectorData = await getProtectorStatus();
+        
+        const humid = weatherData.data.humidity || 0;
+        const isRaining = weatherData.data.raining == "raining" || "no_rain";
+
+        const light = weatherData.data.sun || 0;
+        const temp = weatherData.data.temperature || 0;
+        const dryness = weatherData.data.dryness || 0;
+
+        const status = protectorData.data.isOpen ? 'active' : 'inactive'
+
+        setTimeout(() =>{
+            console.log("timeout to show my fabulous loading screen");
+
+            // exit loading screen
+            loadingScreen("stop");
+
+            // update UI
+            updateStatusCard(status);
+            updateRaingCard(isRaining, temp, humid);
+            updateDrynessCard(dryness);
+            updateLightCard(light);
+
+            // last update
+            document.getElementById('last-update').textContent = 'Last update: ' + new Date().toLocaleString();
+
+            // push notification
+            pushNotification("Refresh successully", true);
+        } , 1500)
+
     } catch (error) {
-        pushNotification(false, "Cannot fetch data")
+        console.error("Refresh Error: ", error);    
+        
+        setTimeout(() =>{
+            console.log("timeout to show my fabulous loading screen");
+
+            // exit loading screen
+            loadingScreen("stop"); 
+            updateStatusCard("forward");
+
+            pushNotification("Cannot fetch data", false);
+        } , 1500)
     }
-    
-    const humid = weatherData.data.humidity || 0;
-    const isRaining = weatherData.data.raining;
-    isRaining = (isRaining == "raining") ? true : false;
-
-    const light = weatherData.data.sun || "";
-    const temp = weatherData.data.temperature || 0;
-    const dryness = weatherData.data.dryness || 0;
-
-    const status = protectorData.data.isOpen; // active, inactive, process
-
-    // exit loading screen
-    loadingScreen("stop");
-
-    // update UI
-    updateStatusCard(status);
-    updateRaingCard(isRaining, temp, humid);
-    updateDrynessCard(dryness);
-    updateLightCard(light);
-
-    // last update
-    document.getElementById('last-update').textContent = 'Last update: ' + new Date().toLocaleString();
-
-    // push notification
-    pushNotification("Refresh successully", true);
 
 }
 
-async function changeProtectorState(current) {
-
-    toState = (current == "active") ? "inactive" : "active" ;
+async function changeProtectorState() {
 
     try {
-        const res = updateRainProtector(toState);
-    } catch (error) {
-        pushNotification("Cannot change protector state", false)
-    }
+        loadingScreen("start");
 
-    setTimeout(async () => await refresh(), 1000);
+        // Get current state
+        const current = getCurrentDisplayState();
+        const toState = (current.includes("active")) ? false : true;
+
+        const result = await updateRainProtector(toState);
+        
+        console.log('Protector update result:', result);
+
+        setTimeout(async () => {
+            await refresh();
+        }, 1000)
+
+        pushNotification(`Status changed successfully`, true);
+
+    } catch (error) {
+        await refresh();
+
+        console.error('Change protector state failed:', error);
+        pushNotification("Cannot change protector state", false);
+    }
 
 }
 
@@ -422,6 +459,12 @@ async function test2() {
         }, 1500);
 
 }
+
+// Auto refresh at start
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded - Starting automatic refresh...');   
+    refresh();
+});
 
 
 

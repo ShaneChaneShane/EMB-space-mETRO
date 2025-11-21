@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx @tailwindcss/cli -i ./src/input.css -o ./public/style.css",
+    "serve": "npx http-server public -p 3000 -c-1",
     "dev": "tailwindcss -i ./src/input.css -o ./public/style.css --watch"
   },
   "keywords": [],

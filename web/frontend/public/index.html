@@ -11,9 +11,6 @@
 
   <body class="flex justify-center min-h-screen md:items-center -z-100">
 
-    <!-- top layer  -->
-
-
     <!-- frame -->
     <div id="base" class="w-full min-w-[340px] max-w-[440px] h-fit
     px-5 py-4 flex flex-col space-y-3">
@@ -23,7 +20,7 @@
             <p class="text-[32px] font-bold left-0 inline-block hover:animate-spin">Dashboard</p>
             <div class="bg-(--tcolor-base1) w-11 h-11 rounded-full 
             flex justify-center items-center card-shadow active:bg-(--tcolor-base2) z-60"
-            onclick="test1()">
+            onclick="refresh()">
                 <img src="img/refresh.png" alt="refresh" class="w-9 h-9 hover:animate-spin z-70">
             </div>
         </div>
@@ -33,14 +30,14 @@
          border-[3px] color-active-state flex justify-between px-4 py-2 duration-300">
             <div class="-space-y-4">
                 <p class="txt-label">Status:</p>
-                <p id="status-text" class="txt-data text-(--cur-state-dark) duration-300">Active</p>
+                <p id="status-text" class="txt-data text-(--cur-state-dark) duration-300">-</p>
             </div>
             <div id="status-botton" class="h-fill w-[110px] flex flex-col justify-center items-center p-2 space-y-1"
-            onclick="test2()">
+            onclick="changeProtectorState()">
                 <div class="bg-(--tcolor-solid) active:bg-(--tcolor-base2) rounded-full w-17 h-17 p-3 hover:animate-bounce duration-300">
                    <div class="icon-colored" style="--icon-color: var(--ncur-state-light); --icon-url: url('img/power.svg')"></div>
                 </div>
-                <p id="status-botton-text" class="text-[16px] font-bold text-(--ncur-state-dark) duration-300">Deactivate</p>
+                <p id="status-botton-text" class="text-[16px] font-bold text-(--ncur-state-dark) duration-300">-</p>
             </div>
         </div>
 
@@ -48,9 +45,9 @@
         <div id="raining-card" class="h-40 w-full bg-(--rcolor-bg) border-[3px] duration-300 border-(--rcolor-border) card-shadow rounded-2xl color-nraining relative overflow-hidden">
             <div class="w-full h-full z-10 px-4 py-2 relative left-0 top-0">
                 <div class="-space-y-2">
-                    <p id="raining-temp" class="txt-data text-(--rcolor-text)">22 °C</p>
-                    <p id="raining-state" class="txt-label text-(--rcolor-text)">Not raining</p>
-                    <p id="raining-humid" class="txt-label text-(--rcolor-text)">Humidity: 40%</p>
+                    <p id="raining-temp" class="txt-data text-(--rcolor-text)">- °C</p>
+                    <p id="raining-state" class="txt-label text-(--rcolor-text)">-g</p>
+                    <p id="raining-humid" class="txt-label text-(--rcolor-text)">Humidity: -</p>
                 </div>
             </div>
             <div class="w-full h-full z-0 absolute left-0 top-0">
@@ -68,7 +65,7 @@
                 <div class="-space-y-2 z-20">
                     <p class="txt-label">Dryness</p>
                     <div class="flex flex-row items-baseline space-x-1">
-                        <p id="dryness-score" class="txt-data z-10 duration-300">1</p>
+                        <p id="dryness-score" class="txt-data z-10 duration-300">-</p>
                         <p class="txt-label text-(--tcolor-base1) z-10">/5</p>
                     </div>
                 </div>
@@ -83,7 +80,7 @@
                 light-card--high relative overflow-hidden -z-50 duration-500">
                     <div class="-space-y-2 px-4 py-2 z-50">
                         <p class="txt-label">Light</p>
-                        <p id="light-status" class="txt-data">High</p>
+                        <p id="light-status" class="txt-data">-</p>
                     </div> 
                     <div class="absolute w-fit h-fit -right-1/4 -bottom-2/3 -z-30">
                         <div id="light-sun3" class="rounded-full flex bg-(--lc-acc3) w-[171px] h-[171px] -z-20 items-center justify-center">
@@ -99,7 +96,7 @@
 
         <!-- last update -->
         <div id="bottom-box" class="py-4 relative">
-            <p id="last-update" class="text-[16px] text-(--tcolor-base1)">Last update: 17 Nov 2025 11:32 PM</p>
+            <p id="last-update" class="text-[16px] text-(--tcolor-base1)">Last update: -</p>
         </div>
 
 
