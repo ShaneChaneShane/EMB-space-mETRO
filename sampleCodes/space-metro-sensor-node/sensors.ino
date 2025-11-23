@@ -71,9 +71,13 @@ void readCommand() {
 }
 
 void readRaindrop(void *pvParameters) {
+  EventType lastEvent = (digitalRead(raindropSensor_pin)) ? RAIN_ON : RAIN_OFF;
   for (;;) {
     EventType event = (digitalRead(raindropSensor_pin)) ? RAIN_ON : RAIN_OFF;
-    xQueueSend(eventQueue, &event, portMAX_DELAY);
+    if (event != lastEvent) {
+      xQueueSend(eventQueue, &event, portMAX_DELAY); // only send if state change
+      lastEvent = event;
+    }
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
