@@ -6,6 +6,7 @@ QueueHandle_t eventQueue;
 
 CoverState coverState = UNKNOWN;
 MotorState motorState = HALT;
+RainingState rainingState = DRY;
 bool isRaining = false;
 
 // entry point for sending out parameters

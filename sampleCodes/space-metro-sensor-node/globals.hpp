@@ -16,7 +16,7 @@ enum MotorState {
 enum RainingState {
   DRY,
   RAINING
-}
+};
 
 // where we want plastic cover to be now
 enum WantedState {
