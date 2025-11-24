@@ -3,9 +3,9 @@
 
 // enum for sending out to other nodes
 enum CoverState {
+  UNKNOWN,
   RETRACTED,
-  EXTENDED,
-  UNKNOWN
+  EXTENDED
 };
 
 enum MotorState {
@@ -25,12 +25,25 @@ enum WantedState {
   WANT_EXTEND
 };
 
+enum BoardId : uint8_t {
+  MINT = 0,
+  BRAIN = 1, 
+  BEAU = 2
+};
+
 // outside factors/sensors/commands
 enum EventType {
   RAIN_ON,
   RAIN_OFF,
   CMD_EXTEND,
   CMD_RETRACT
+};
+
+enum MessageType {
+  MSG_ACK = 0,
+  MSG_CMD = 1,
+  MSG_STATE = 2,
+  MSG_SENSOR = 3
 };
 
 extern CoverState coverState;
@@ -40,5 +53,6 @@ extern RainingState rainingState;
 // queues
 extern QueueHandle_t eventQueue;
 extern QueueHandle_t motorQueue;
+extern QueueHandle_t espNowQueue;
 
 #endif

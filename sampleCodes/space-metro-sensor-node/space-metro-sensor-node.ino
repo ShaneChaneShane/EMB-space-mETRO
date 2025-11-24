@@ -1,4 +1,6 @@
 #include "globals.hpp"
+#include "payloads.hpp"
+#include <esp_now.h>
 
 TaskHandle_t controlTaskHandler;
 TaskHandle_t sendStateTaskHandler;
@@ -7,15 +9,24 @@ QueueHandle_t eventQueue;
 CoverState coverState = UNKNOWN;
 MotorState motorState = HALT;
 RainingState rainingState = DRY;
-bool isRaining = false;
 
 // entry point for sending out parameters
 void sendStateTask(void *pvParameters) {
+  Packet p;
   for (;;) {
     Serial.printf("MotorState: %d\n", motorState);
     Serial.printf("CoverState: %d\n", coverState);
     Serial.printf("RainingState: %d\n", rainingState);
     Serial.println("--------------------");
+
+    p.header.dst = MINT;
+    p.header.type = MSG_STATE;
+    p.payload.state.motorState = motorState;
+    p.payload.state.coverState = coverState;
+    p.payload.state.rainingState = rainingState;
+    if (xQueueSend(espNowQueue, &p, portMAX_DELAY != pdTRUE)) {
+      Serial.println("Failed to send to esp-now queue");
+    }
     vTaskDelay(pdMS_TO_TICKS(1000)); // send every x milliseconds
   }
 }
@@ -81,6 +92,7 @@ void setup() {
   // setups
   setupMotor();
   setupSensors();
+  setupEspNow();
 
   // queue creation
   eventQueue = xQueueCreate(16, sizeof(EventType));
