@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "wake_up_prompt_tone.h": "c",
+        "speech_commands_action.h": "c"
+    }
+}
