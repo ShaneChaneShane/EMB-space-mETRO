@@ -1,14 +1,22 @@
 #ifndef GLOBALS_HPP
 #define GLOBALS_HPP
 
-// all possible state of plastic cover
+// enum for sending out to other nodes
 enum CoverState {
-  UNKNOWN,
   RETRACTED,
-  MOVING_EXTEND,
   EXTENDED,
-  MOVING_RETRACT
+  UNKNOWN
 };
+
+enum MotorState {
+  HALT,
+  WORKING
+};
+
+enum RainingState {
+  DRY,
+  RAINING
+}
 
 // where we want plastic cover to be now
 enum WantedState {
@@ -21,13 +29,13 @@ enum WantedState {
 enum EventType {
   RAIN_ON,
   RAIN_OFF,
-  LIMIT_EXTEND_HIT,
-  LIMIT_RETRACT_HIT,
   CMD_EXTEND,
   CMD_RETRACT
 };
 
 extern CoverState coverState;
+extern MotorState motorState;
+extern RainingState rainingState;
 
 // queues
 extern QueueHandle_t eventQueue;
