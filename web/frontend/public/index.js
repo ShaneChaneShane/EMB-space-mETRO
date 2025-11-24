@@ -342,7 +342,7 @@ async function refresh() {
         const protectorData = await getProtectorStatus();
         
         const humid = weatherData.data.humidity || 0;
-        const isRaining = weatherData.data.raining == "raining" || "no_rain";
+        const isRaining = weatherData.data.rain == 'raining' || false;
 
         const light = weatherData.data.sun || 0;
         const temp = weatherData.data.temperature || 0;
