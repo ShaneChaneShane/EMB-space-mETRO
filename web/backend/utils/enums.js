@@ -13,9 +13,9 @@ const SunlightLevel = Object.freeze({
   NO_SUN: "no_sun",
 });
 
-// dryness levels (0–5)
+// dryness levels (1–5)
 const DrynessLevel = Object.freeze({
-  MIN: 0,
+  MIN: 1,
   MAX: 5,
 });
 

@@ -7,16 +7,13 @@ module.exports = function evaluateSensorData(
   temperature,
   light
 ) {
-  // TO-DO: IMPLEMENT REAL LOGIC HERE
-
-  // SOME IMAGINARY LOGIC TO DETERMINE  RAIN
-  const rainStatus = rain > 500 ? RainStatus.RAINING : RainStatus.NO_RAIN;
+  const rainStatus = rain == 1 ? RainStatus.RAINING : RainStatus.NO_RAIN;
 
   // SOME IMAGINARY LOGIC TO DETERMINE SUNLIGHT LEVEL
   const sunlightLevel =
-    light > 700
+    light > 3072 // 75% of 4095
       ? SunlightLevel.HIGH
-      : light > 300
+      : light > 1536 // 40% of 4095
       ? SunlightLevel.MODERATE
       : SunlightLevel.LOW;
   const humidityDiff = humidityClothes - humidityEnv;
@@ -25,15 +22,15 @@ module.exports = function evaluateSensorData(
 
   // SOME IMAGINARY LOGIC TO DETERMINE DRYNESS LEVEL
   const drynessLevel =
-    humidityDiff < 10
+    humidityDiff > 30
       ? DrynessLevel.MIN
-      : humidityDiff < 30
+      : humidityDiff > 25
       ? DrynessLevel.MIN + step
-      : humidityDiff < 50
+      : humidityDiff > 20
       ? DrynessLevel.MIN + 2 * step
-      : humidityDiff < 70
+      : humidityDiff > 15
       ? DrynessLevel.MIN + 3 * step
-      : humidityDiff < 90
+      : humidityDiff > 10
       ? DrynessLevel.MIN + 4 * step
       : DrynessLevel.MAX;
 
