@@ -11,7 +11,7 @@
 #include "DHT.h"
 #include <esp_now.h>
 
-
+// ===================== PINS & SENSORS (ของมิ้น) =====================
 #define DHTTYPE  DHT11
 #define DHTPIN1  27
 #define DHTPIN2  26
@@ -31,6 +31,7 @@ char pass[] = "11111111";
 // ===================== ESP-NOW PEER MAC (BRAIN) =====================
 uint8_t BRAIN_MAC[] = {0x08, 0xA6, 0xF7, 0xB1, 0xD8, 0xB4};
 
+// ===================== PROTOCOL =====================
 enum MsgType : uint8_t {
   MSG_RAIN=1, MSG_CMD=2,
   MSG_REQ_MOTOR=3, MSG_RES_MOTOR=4,
@@ -49,22 +50,21 @@ typedef struct __attribute__((packed)) {
 
 volatile uint8_t seqTx = 0;
 
-
-//auto or manual states
+// ===================== AUTO / MANUAL STATES =====================
 bool manualOverride = false;
 String umbrellaText = "CLOSED";
 
-//buffer brin
+// ----- buffer ค่าที่รับจากเบรน -----
 volatile int latestRainVal = 1;
 volatile bool rainUpdated = false;
 
 volatile uint8_t latestUmbState = U_CLOSED;
 volatile bool umbUpdated = false;
 
-
+// ----- กันลูป V7 -----
 volatile bool ignoreNextV7 = false;
 
-//helper
+// ===================== HELPERS =====================
 String umbToText(uint8_t u){
   if(u==U_OPEN) return "OPEN";
   if(u==U_CLOSED) return "CLOSED";
@@ -80,7 +80,7 @@ void sendPacket(uint8_t type, uint8_t a=0, int16_t b=0){
   esp_now_send(BRAIN_MAC, (uint8_t*)&p, sizeof(p));
 }
 
-//espnow receive
+// ===================== ESP-NOW RECEIVE (ห้าม virtualWrite ในนี้) =====================
 void onEspNowRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len){
   if(len != sizeof(Packet)) return;
   Packet p; memcpy(&p, data, sizeof(p));
@@ -107,9 +107,9 @@ void onEspNowRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len)
   }
 }
 
-//PUSH ESP-NOW DATA TO BLYNK
+// ===================== PUSH ESP-NOW DATA TO BLYNK =====================
 void pushEspNowToBlynk(){
-  //rain
+  // ---- Rain ----
   if(rainUpdated){
     rainUpdated = false;
     int rainVal = latestRainVal;
@@ -127,7 +127,7 @@ void pushEspNowToBlynk(){
     }
   }
 
-  //Umbrella -> V7 visual
+  // ---- Umbrella -> V7 visual ----
   if(umbUpdated){
     umbUpdated = false;
     umbrellaText = umbToText(latestUmbState);
@@ -135,7 +135,7 @@ void pushEspNowToBlynk(){
     Serial.print("[SYNC] UmbrellaText = ");
     Serial.println(umbrellaText);
 
-    ignoreNextV7 = true;   
+    ignoreNextV7 = true;                // กันลูป
     if (umbrellaText == "OPEN") {
       Blynk.virtualWrite(V7, 1);
     } else if (umbrellaText == "CLOSED") {
@@ -144,14 +144,14 @@ void pushEspNowToBlynk(){
   }
 }
 
-//sync ร่ม
+// ขอ sync สถานะร่มเป็นระยะ
 void requestState(){
   sendPacket(MSG_REQ_STATE);
 }
 
-//BLYNK TOGGLE BUTTON (V7)
+// ===================== BLYNK TOGGLE BUTTON (V7) =====================
 BLYNK_WRITE(V7){
-  if(ignoreNextV7){     
+  if(ignoreNextV7){           // ถ้าค่ามาจาก device เอง ให้ข้าม
     ignoreNextV7 = false;
     return;
   }
@@ -174,7 +174,7 @@ BLYNK_WRITE(V7){
   }
 }
 
-//SENSOR
+// ===================== ORIGINAL SENSOR SENDER (ของมิ้น) =====================
 void sendSensor() {
   float h1 = dht1.readHumidity();
   float h2 = dht2.readHumidity();
@@ -184,13 +184,25 @@ void sendSensor() {
 
   int lightRaw = analogRead(LIGHT_AO_PIN);
 
+  //virrtual pin
   Blynk.virtualWrite(V0, t_ds);
   Blynk.virtualWrite(V1, h1);
   Blynk.virtualWrite(V2, h2);
   Blynk.virtualWrite(V3, lightRaw);
+
+  // ---- PRINT ค่าลง Serial Monitor ----
+  Serial.print("Temp (C): ");
+  Serial.println(t_ds);
+  Serial.print("Humidity Clothes : ");
+  Serial.println(h1);
+  Serial.print("Humidity Env : ");
+  Serial.println(h2);
+  Serial.print("Light : ");
+  Serial.println(lightRaw);
+  Serial.println("========================");
 }
 
-// ===================== SETUP / LOOP =====================
+
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -224,4 +236,5 @@ void setup() {
 void loop() {
   Blynk.run();
   timer.run();
+  
 }
