@@ -11,9 +11,11 @@ module.exports = function evaluateSensorData(
 
   // SOME IMAGINARY LOGIC TO DETERMINE SUNLIGHT LEVEL
   const sunlightLevel =
-    light > 3072 // 75% of 4095
+    light > 2850 // 75% of 4095
+      ? SunlightLevel.VERY_HIGH
+      : light > 2648 // 65% of 4095
       ? SunlightLevel.HIGH
-      : light > 1536 // 40% of 4095
+      : light > 1630 // 40% of 4095
       ? SunlightLevel.MODERATE
       : SunlightLevel.LOW;
   const humidityDiff = humidityClothes - humidityEnv;
