@@ -392,7 +392,7 @@ async function changeProtectorState() {
 
         // Get current state
         const current = getCurrentDisplayState();
-        const toState = (current.includes("active")) ? false : true;
+        const toState = (current == "active") ? false : true;
 
         const result = await updateRainProtector(toState);
         
