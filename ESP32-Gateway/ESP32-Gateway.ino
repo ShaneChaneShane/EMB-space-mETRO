@@ -1,3 +1,7 @@
+#define BLYNK_TEMPLATE_ID "TMPL6T0nHp_OC"
+#define BLYNK_TEMPLATE_NAME "test"
+#define BLYNK_AUTH_TOKEN "ySDWkab4D1FH10wZajhC_w89sxmfY8jT"
+
 #include "globals.hpp"
 #include "payloads.hpp"
 
@@ -5,6 +9,42 @@
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <BlynkSimpleEsp32.h>
+
+// sensors
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include "DHT.h"
+#include <BlynkSimpleEsp32.h>   // you already have this, keep only one
+
+// --- Sensor to pin mapping (from mint_sensors_adding_firebase.ino) ---
+// V0: temp
+// V1: humid1
+// V2: humid2
+// V3: light raw
+// V4: coverState (0=UNKNOWN,1=RETRACTED,2=EXTENDED)
+// V5: motorState (0=HALT,1=WORKING)
+// V6: rainingState (0=DRY,1=RAINING)
+// V7: close/open to brain
+
+#define DHTTYPE      DHT11
+#define DHTPIN1      27
+#define DHTPIN2      26
+#define ONE_WIRE_BUS 25
+#define LIGHT_AO_PIN 34
+
+DHT dht1(DHTPIN1, DHTTYPE);
+DHT dht2(DHTPIN2, DHTTYPE);
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature ds18b20(&oneWire);
+
+// Blynk timer for periodic sending
+BlynkTimer timer;
+
+
+CoverState   coverState   = UNKNOWN;
+MotorState   motorState   = HALT;
+RainingState rainingState = DRY;
 
 TaskHandle_t espNowTaskHandler;
 QueueHandle_t espNowQueue;
@@ -18,7 +58,7 @@ Packet receivedPacket;
 esp_now_peer_info_t peerInfo;
 static uint16_t seqTx = 0;
 
-// line
+// line -----------------------
 String LINE_TOKEN = "+Awb8i1H9s7XzsTg89412DCVvYwAXnwOryF4h0zKOSyBuvlf8/8a87jGS0n7C+BTDAtOzcmaYMY5gkqVNFbbs9Dr+ilsdxtfB+WolEtRqtNbEti4sAvGJHHsWAm8PUm35fCkC4GOgLBZYlEHEAQS5QdB04t89/1O/w1cDnyilFU="; // Channel access token
 String GROUP_ID = "Ca28231dfd82d32667d5c5c81756ccbfb";
 
@@ -37,13 +77,16 @@ void sendLineMessage(String message) {
     http.end();
   }
 }
+// ----------------------------
 
+
+CoverState lastCoverState = UNKNOWN;
+// ESP NOW ----------------------------
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? 
                  "Delivery Success" : "Delivery Fail");
 }
 
-CoverState lastCoverState = UNKNOWN;
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 
   if (len > sizeof(receivedPacket)) {
@@ -129,7 +172,7 @@ void setupEspNow() {
   WiFi.mode(WIFI_STA);
 
 
-  WiFi.begin("AAA", "11111111");
+  WiFi.begin("Hi", "Noon12345");
   while (WiFi.status() != WL_CONNECTED) delay(10);
 
   Serial.print("WiFi channel: ");
@@ -154,7 +197,7 @@ void setupEspNow() {
     Serial.println("Failed to add peer");
     return;
   }
-
+  Serial.println("Successfully add peer");
   // Queue + Task
   espNowQueue = xQueueCreate(16, sizeof(Packet));
   xTaskCreatePinnedToCore(
@@ -166,8 +209,9 @@ void setupEspNow() {
       &espNowTaskHandler,
       1  // ย้ายไป core1 เพื่อไม่ชน sensor task
   );
+  
+  Serial.println("Successfully add Queue Task");
 }
-
 
 void sendCmdToBrain(bool openCover) {
 
@@ -183,8 +227,11 @@ void sendCmdToBrain(bool openCover) {
   if (esp_now_send(BRAIN_MAC, (uint8_t*)&p, sizeof(p)) != ESP_OK) {
     Serial.println("Error sending CMD to BRAIN");
   }
+  
+  Serial.println("Successfully send cmd to BRAIN");
 }
-
+// ----------------------------
+// BLYNK
 BLYNK_WRITE(V7) {
   int v = param.asInt();
 
@@ -194,4 +241,75 @@ BLYNK_WRITE(V7) {
 
 BLYNK_CONNECTED() {
   Blynk.syncAll();
+}
+void sendSensorsToBlynk() {
+  // Read sensors
+  float h1 = dht1.readHumidity();
+  float h2 = dht2.readHumidity();
+  Serial.println("READ HUMIDITY 1 AND 2");
+  Serial.println(h1);
+  Serial.println(h2);
+  Serial.println("----------");
+  ds18b20.requestTemperatures();
+  float t_ds = ds18b20.getTempCByIndex(0);
+  Serial.println("READ TEMPERATURE");
+  Serial.println(t_ds);
+  Serial.println("----------");
+  int lightRaw = analogRead(LIGHT_AO_PIN);
+  Serial.println("READ LIGHT");
+  Serial.println(lightRaw);
+  Serial.println("----------");
+  // Send to Blynk (same mapping as mint_sensors_adding_firebase.ino)
+  if (!isnan(h1)) {
+    Blynk.virtualWrite(V1, h1);
+    Serial.println("BLYNKL: WROTE HUMIDITY 1 (CLOTHES) TO V1");
+  }
+  if (!isnan(h2)) {
+    Blynk.virtualWrite(V2, h2);
+    Serial.println("BLYNKL: WROTE HUMIDITY 2 (ENV) TO V2");
+  }
+  if (!isnan(t_ds)) {
+    Blynk.virtualWrite(V0, t_ds);
+    Serial.println("BLYNKL: WROTE TEMP TO V0");
+  }
+
+
+  Blynk.virtualWrite(V3, lightRaw);
+  Serial.println("BLYNKL: WROTE LIGHT TO V3");
+
+  // States coming from the “brain” / ESP-NOW logic
+  Blynk.virtualWrite(V4, (int)coverState);
+  Blynk.virtualWrite(V5, (int)motorState);
+  Blynk.virtualWrite(V6, (int)rainingState);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize ESP-NOW and WiFi
+  setupEspNow();
+
+  // Blynk: use existing WiFi connection
+  Blynk.config(BLYNK_AUTH_TOKEN);
+  Blynk.connect();
+
+  // --- Sensor init
+  dht1.begin();
+  dht2.begin();
+  ds18b20.begin();
+  pinMode(LIGHT_AO_PIN, INPUT);
+
+  // Send sensors & states to Blynk every 1 second
+  timer.setInterval(1000L, sendSensorsToBlynk);
+}
+
+void loop() {
+  // Let Blynk handle communication, widgets, etc.
+  Blynk.run();
+
+  // Run BlynkTimer (calls sendSensorsToBlynk every 1s)
+  timer.run();
+
+  // Small delay so loop isn’t too tight
+  delay(10);
 }
