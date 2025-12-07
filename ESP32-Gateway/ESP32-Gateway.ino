@@ -2,6 +2,27 @@
 #define BLYNK_TEMPLATE_NAME "test"
 #define BLYNK_AUTH_TOKEN "ySDWkab4D1FH10wZajhC_w89sxmfY8jT"
 
+// FIREBASE
+#include <Firebase_ESP_Client.h>
+#include "addons/TokenHelper.h"
+#include "addons/RTDBHelper.h"
+#include <time.h>  // for time()
+
+// Use the same values you had in mint_sensors_adding_firebase.ino
+#define API_KEY "AIzaSyDmHL2GsIO3qv3ZUjLeKLAO8foffQ-7FiY"
+#define DATABASE_URL "https://emb-space-metro-default-rtdb.asia-southeast1.firebasedatabase.app/"
+
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+FirebaseJson json;
+
+
+bool signupOk = false;
+bool firebaseReady = false;
+
+// ----------
+
 #include "globals.hpp"
 #include "payloads.hpp"
 
@@ -9,13 +30,12 @@
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <BlynkSimpleEsp32.h>
 
 // sensors
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "DHT.h"
-#include <BlynkSimpleEsp32.h>   // you already have this, keep only one
+#include <BlynkSimpleEsp32.h>
 
 // --- Sensor to pin mapping (from mint_sensors_adding_firebase.ino) ---
 // V0: temp
@@ -231,7 +251,7 @@ void sendCmdToBrain(bool openCover) {
   Serial.println("Successfully send cmd to BRAIN");
 }
 // ----------------------------
-// BLYNK
+// BLYNK ---------------------
 BLYNK_WRITE(V7) {
   int v = param.asInt();
 
@@ -281,8 +301,91 @@ void sendSensorsToBlynk() {
   Blynk.virtualWrite(V4, (int)coverState);
   Blynk.virtualWrite(V5, (int)motorState);
   Blynk.virtualWrite(V6, (int)rainingState);
+
+  // Prepare JSON for Firebase
+  if (!firebaseReady) {
+    Serial.println("[Firebase] Not ready yet, skip upload");
+    Serial.println("-----------------------------");
+    return;
+  }
+
+  json.clear(); 
+  if (!isnan(h1)) json.set("Temp", h1);
+  if (!isnan(h2)) json.set("Humidity_Clothes", h2);
+  if (!isnan(t_ds)) json.set("Humidity_Env", t_ds);
+
+  json.set("Light", lightRaw);
+  json.set("Rain", (int)coverState);
+  json.set("MotorInProcess", (int)motorState);
+  json.set("RainProtectorStatus", (int)rainingState);
+
+  // Make a unique key using current time + millis
+  time_t now = time(nullptr);
+  if (now < 100000) {
+    Serial.println("[Firebase] Time not valid yet, skip upload");
+    Serial.println("-----------------------------");
+    return;
+  }
+  String key = String((unsigned long)now) + "_" + String(millis());
+  String path = "/RealtimeData/" + key;
+
+  Serial.print("[Firebase] Uploading to path: ");
+  Serial.println(path);
+
+  // === 4) Send JSON to Firebase ===
+  if (Firebase.RTDB.setJSON(&fbdo, path, &json)) {
+    Serial.println("[Firebase] Upload OK");
+  } else {
+    Serial.print("[Firebase] Upload FAILED: ");
+    Serial.println(fbdo.errorReason());
+  }
+
+  Serial.println("-----------------------------");
+}
+// ----------------------------
+
+// Firebase -------------------
+// Call this once in setup(), after WiFi is connected
+void setupFirebase() {
+  // Sync time via NTP (needed to make Firebase tokens work correctly)
+  Serial.println("[Firebase] Syncing time via NTP...");
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+  time_t now = time(nullptr);
+
+  while (now < 1700000000) {  // wait until time is reasonable (~2024+)
+    Serial.print(".");
+    delay(200);
+    now = time(nullptr);
+  }
+  Serial.println("\n[Firebase] Time synced!");
+
+  // Basic Firebase config
+  config.api_key      = API_KEY;
+  config.database_url = DATABASE_URL;
+
+  // Anonymous sign up (no email/password)
+  Serial.println("[Firebase] Signing up...");
+  if (Firebase.signUp(&config, &auth, "", "")) {
+    Serial.println("[Firebase] SignUp successful");
+  } else {
+    Serial.printf("[Firebase] SignUp error: %s\n",
+                  config.signer.signupError.message.c_str());
+    return;  // do not continue
+  }
+
+  // Monitor token status (helper from TokenHelper.h)
+  config.token_status_callback = tokenStatusCallback;
+
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+
+  firebaseReady = true;
+  Serial.println("[Firebase] Firebase is ready");
 }
 
+
+
+// ----------------------------
 void setup() {
   Serial.begin(115200);
 
@@ -301,6 +404,9 @@ void setup() {
 
   // Send sensors & states to Blynk every 1 second
   timer.setInterval(1000L, sendSensorsToBlynk);
+
+  // Firebase
+  setupFirebase();
 }
 
 void loop() {
