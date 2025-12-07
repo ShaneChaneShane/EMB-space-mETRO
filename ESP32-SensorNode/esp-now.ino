@@ -13,6 +13,7 @@ Packet receivedPacket;
 
 uint8_t MINT_MAC[] = { 0x08, 0xA6, 0xF7, 0xB1, 0xD8, 0xB4 };
 uint8_t BRAIN_MAC[] = { 0x28, 0x56, 0x2F, 0x49, 0x6A, 0x54 };
+uint8_t BEAU_MAC[] = { 0xD0, 0xCF, 0x13, 0x15, 0x4A, 0x2C };
 
 void setupEspNow() {
   WiFi.mode(WIFI_STA);
@@ -44,6 +45,7 @@ void setupEspNow() {
   } else {
     Serial.println("Peer added! (MINT)");
   }
+
   esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 
   espNowQueue = xQueueCreate(16, sizeof(Packet));
