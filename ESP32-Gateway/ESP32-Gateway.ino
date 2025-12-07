@@ -42,10 +42,10 @@ bool firebaseReady = false;
 // V1: humid1
 // V2: humid2
 // V3: light raw
-// V4: coverState (0=UNKNOWN,1=RETRACTED,2=EXTENDED)
+// V4: rainingState (0=DRY,1=RAINING)
 // V5: motorState (0=HALT,1=WORKING)
-// V6: rainingState (0=DRY,1=RAINING)
-// V7: close/open to brain
+// V6: close/open command
+// V8: coverState == rainProtectorStatus (0=UNKNOWN,1=RETRACTED,2=EXTENDED)
 
 #define DHTTYPE      DHT11
 #define DHTPIN1      27
@@ -133,9 +133,9 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
                     coverState, motorState, rainingState);
 
    
-      Blynk.virtualWrite(V4, (int)coverState);
+      Blynk.virtualWrite(V8, (int)coverState);
       Blynk.virtualWrite(V5, (int)motorState);
-      Blynk.virtualWrite(V6, (int)rainingState);
+      Blynk.virtualWrite(V4, (int)rainingState);
 
       if (coverState != lastCoverState) {
         lastCoverState = coverState;
@@ -298,9 +298,9 @@ void sendSensorsToBlynk() {
   Serial.println("BLYNKL: WROTE LIGHT TO V3");
 
   // States coming from the “brain” / ESP-NOW logic
-  Blynk.virtualWrite(V4, (int)coverState);
+  Blynk.virtualWrite(V8, (int)coverState);
   Blynk.virtualWrite(V5, (int)motorState);
-  Blynk.virtualWrite(V6, (int)rainingState);
+  Blynk.virtualWrite(V4, (int)rainingState);
 
   // Prepare JSON for Firebase
   if (!firebaseReady) {
