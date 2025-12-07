@@ -163,6 +163,26 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
   }
 }
 
+void test_espnow_receive() {
+    Packet fake;
+
+    // Fake header: as if it comes from BRAIN
+    fake.header.src  = BRAIN;
+    fake.header.dst  = MINT;
+    fake.header.type = MSG_STATE;
+    fake.header.seq  = 1;
+
+    // Fake state payload
+    fake.payload.state.coverState   = EXTENDED; // or RETRACTED
+    fake.payload.state.motorState   = WORKING;  // or HALT
+    fake.payload.state.rainingState = RAINING;  // or DRY
+
+    // Pretend the packet comes from the real BRAIN MAC
+    OnDataRecv(BRAIN_MAC, (uint8_t*)&fake, sizeof(fake));
+}
+
+
+
 void espNowTask(void *pvParameters) {
 
   Packet p;
@@ -233,7 +253,7 @@ void setupEspNow() {
   Serial.println("Successfully add Queue Task");
 }
 
-void sendCmdToBrain(bool openCover) {
+void sendCmdToSensorNode(bool openCover) {
 
   Packet p;
 
@@ -249,14 +269,25 @@ void sendCmdToBrain(bool openCover) {
   }
   
   Serial.println("Successfully send cmd to BRAIN");
+  Serial.println(p.payload.cmd.openCover);
+   
 }
+void test_send_command() {
+    Serial.println("=== Test sendCmdToSensorNode() ===");
+    sendCmdToSensorNode(true);   // simulate "open cover" command
+    sendCmdToSensorNode(false);  // simulate "close cover" command
+    Serial.println("=== Finished test_send_command ===");
+}
+
+
+
 // ----------------------------
 // BLYNK ---------------------
 BLYNK_WRITE(V6) {
   int v = param.asInt();
 
-  if (v == 1) sendCmdToBrain(true);   // EXTEND
-  else        sendCmdToBrain(false);  // RETRACT
+  if (v == 1) sendCmdToSensorNode(true);   // EXTEND
+  else        sendCmdToSensorNode(false);  // RETRACT
 }
 
 BLYNK_CONNECTED() {
@@ -418,6 +449,14 @@ void loop() {
   // Run BlynkTimer (calls sendSensorsToBlynk every 1s)
   timer.run();
 
-  // Small delay so loop isn’t too tight
+  // if (Serial.available()) {
+  //   char c = Serial.read();
+  //   if (c == 'r') {
+  //     test_espnow_receive();
+  //   } else if (c == 'c') {
+  //     test_send_command();
+  //   }
+  // }
+
   delay(10);
 }
