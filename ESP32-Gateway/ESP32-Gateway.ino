@@ -252,7 +252,7 @@ void sendCmdToBrain(bool openCover) {
 }
 // ----------------------------
 // BLYNK ---------------------
-BLYNK_WRITE(V7) {
+BLYNK_WRITE(V6) {
   int v = param.asInt();
 
   if (v == 1) sendCmdToBrain(true);   // EXTEND
@@ -310,14 +310,16 @@ void sendSensorsToBlynk() {
   }
 
   json.clear(); 
-  if (!isnan(h1)) json.set("Temp", h1);
-  if (!isnan(h2)) json.set("Humidity_Clothes", h2);
-  if (!isnan(t_ds)) json.set("Humidity_Env", t_ds);
+  if (!isnan(t_ds)) json.set("Temp", t_ds);
+  if (!isnan(h1))  json.set("Humidity_Clothes", h1);
+  if (!isnan(h2))  json.set("Humidity_Env", h2);
+
 
   json.set("Light", lightRaw);
-  json.set("Rain", (int)coverState);
-  json.set("MotorInProcess", (int)motorState);
-  json.set("RainProtectorStatus", (int)rainingState);
+  json.set("Rain", (int)rainingState);               // 0=DRY, 1=RAINING
+  json.set("MotorInProcess", (int)motorState);       // 0=HALT, 1=WORKING
+  json.set("RainProtectorStatus", (int)coverState);  // 0=UNKNOWN,1=RETRACTED,2=EXTENDED
+
 
   // Make a unique key using current time + millis
   time_t now = time(nullptr);
