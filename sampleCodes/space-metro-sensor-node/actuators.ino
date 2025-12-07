@@ -4,7 +4,6 @@ const uint8_t motorControlA_pin = 32;
 const uint8_t motorControlB_pin = 33;
 
 QueueHandle_t motorQueue;
-
 TaskHandle_t motorTaskHandler;
 
 void setupMotor() {
@@ -23,39 +22,50 @@ void setupMotor() {
   digitalWrite(motorControlB_pin, HIGH);
 
   motorQueue = xQueueCreate(16, sizeof(WantedState));
+  if (motorQueue == NULL) {
+    Serial.println("Failed to create motorQueue!");
+    while (true) { delay(1000); }
+  }
+
   xTaskCreatePinnedToCore(motorTask, "motor-task", 8192, NULL, 1, &motorTaskHandler, 0);
 }
 
 void motorTask(void *pvParameters) {
   WantedState command;
-  WantedState afterCommand;
+
   for (;;) {
     if (xQueueReceive(motorQueue, &command, portMAX_DELAY) == pdTRUE) {
       if (command == NONE) {
         digitalWrite(motorControlA_pin, HIGH);
         digitalWrite(motorControlB_pin, HIGH);
         motorState = HALT;
-      } else if (command == WANT_EXTEND && coverState != EXTENDED) {
-        // extend for 8 seconds
+      } 
+      else if (command == WANT_EXTEND && coverState != EXTENDED) {
+        Serial.println("MOTOR: EXTEND");
         digitalWrite(motorControlA_pin, HIGH);
         digitalWrite(motorControlB_pin, LOW);
         motorState = WORKING;
         vTaskDelay(pdMS_TO_TICKS(8000));
+
         
-        // sends halt command
+        WantedState afterCommand = NONE;
         xQueueSend(motorQueue, &afterCommand, portMAX_DELAY);
+
         coverState = EXTENDED;
-      } else if (command == WANT_RETRACT && coverState != RETRACTED) {
-        // retract for 8 seconds
+      } 
+      else if (command == WANT_RETRACT && coverState != RETRACTED) {
+        Serial.println("MOTOR: RETRACT");
         digitalWrite(motorControlA_pin, LOW);
         digitalWrite(motorControlB_pin, HIGH);
-        vTaskDelay(pdMS_TO_TICKS(8000));
         motorState = WORKING;
+        vTaskDelay(pdMS_TO_TICKS(8000));
 
-        // sends halt command
+        WantedState afterCommand = NONE;
         xQueueSend(motorQueue, &afterCommand, portMAX_DELAY);
+
         coverState = RETRACTED;
-      } else {
+      } 
+      else {
         Serial.println("Unknown command received from motorQueue.");
       }
     } else {

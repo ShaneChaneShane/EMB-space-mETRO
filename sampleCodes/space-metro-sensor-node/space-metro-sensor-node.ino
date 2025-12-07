@@ -1,6 +1,8 @@
 #include "globals.hpp"
 #include "payloads.hpp"
 #include <esp_now.h>
+#include <WiFi.h>
+#include "firebase.hpp"
 
 TaskHandle_t controlTaskHandler;
 TaskHandle_t sendStateTaskHandler;
@@ -24,12 +26,40 @@ void sendStateTask(void *pvParameters) {
     p.payload.state.motorState = motorState;
     p.payload.state.coverState = coverState;
     p.payload.state.rainingState = rainingState;
-    if (xQueueSend(espNowQueue, &p, portMAX_DELAY != pdTRUE)) {
+    if (xQueueSend(espNowQueue, &p, portMAX_DELAY) != pdTRUE) {
       Serial.println("Failed to send to esp-now queue");
     }
     vTaskDelay(pdMS_TO_TICKS(1000)); // send every x milliseconds
   }
 }
+// ===== ESP-NOW receive callback (จาก Beau) =====
+// void OnDataRecv(const esp_now_recv_info * info, const uint8_t *data, int len) {
+//   if (len <= 0 || data == nullptr) return;
+
+//   // แปลง data เป็นสตริง
+//   String msg = String((const char *)data);
+//   msg.trim();
+
+//   Serial.print("ESP-NOW recv: ");
+//   Serial.println(msg);
+
+//   EventType e;
+
+//   if (msg == "CMD_EXTEND") {
+//     e = CMD_EXTEND;
+//   } else if (msg == "CMD_RETRACT") {
+//     e = CMD_RETRACT;
+//   } else {
+//     Serial.println("Unknown ESP-NOW message, ignore");
+//     return;
+//   }
+
+//   if (eventQueue != nullptr) {
+//     if (xQueueSend(eventQueue, &e, 0) != pdTRUE) {
+//       Serial.println("Failed to enqueue event from ESP-NOW");
+//     }
+//   }
+// }
 
 // controlling motor on event received
 void controlTask(void *pvParameters) {
@@ -88,7 +118,10 @@ void controlTask(void *pvParameters) {
 
 void setup() {
   Serial.begin(115200);
-
+  eventQueue = xQueueCreate(16, sizeof(EventType));
+  if (eventQueue == nullptr) {
+    Serial.println("Failed to create eventQueue");
+  }
   // setups
   setupMotor();
   setupSensors();
@@ -98,6 +131,7 @@ void setup() {
   eventQueue = xQueueCreate(16, sizeof(EventType));
   xTaskCreatePinnedToCore(controlTask, "main-control-task", 8192, NULL, 2, &controlTaskHandler, 0);
   xTaskCreatePinnedToCore(sendStateTask, "send-state-task", 8192, NULL, 2, &sendStateTaskHandler, 1);
+  Serial.println("Setup Complete!");
 }
 
 void loop() {
