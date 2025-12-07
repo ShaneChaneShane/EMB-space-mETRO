@@ -6,6 +6,7 @@
 #include <esp_now.h>
 #include <esp_wifi.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
 
 TaskHandle_t espNowTaskHandler;
 QueueHandle_t espNowQueue;
@@ -19,13 +20,32 @@ Packet receivedPacket;
 esp_now_peer_info_t peerInfo;
 static uint16_t seqTx = 0;
 
-\
+// line
+String LINE_TOKEN = "+Awb8i1H9s7XzsTg89412DCVvYwAXnwOryF4h0zKOSyBuvlf8/8a87jGS0n7C+BTDAtOzcmaYMY5gkqVNFbbs9Dr+ilsdxtfB+WolEtRqtNbEti4sAvGJHHsWAm8PUm35fCkC4GOgLBZYlEHEAQS5QdB04t89/1O/w1cDnyilFU="; // Channel access token
+String GROUP_ID = "Ca28231dfd82d32667d5c5c81756ccbfb";
+
+void sendLineMessage(String message) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("https://api.line.me/v2/bot/message/push");
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", "Bearer " + LINE_TOKEN);
+
+    String payload = "{\"to\":\"" + GROUP_ID + "\",\"messages\":[{\"type\":\"text\",\"text\":\"" + message + "\"}]}";
+    int httpResponseCode = http.POST(payload);
+
+    Serial.print("LINE Response: ");
+    Serial.println(httpResponseCode);
+    http.end();
+  }
+}
+
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? 
                  "Delivery Success" : "Delivery Fail");
 }
 
-
+CoverState lastCoverState = UNKNOWN;
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 
   if (len > sizeof(receivedPacket)) {
@@ -55,6 +75,23 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
       Blynk.virtualWrite(V4, (int)coverState);
       Blynk.virtualWrite(V5, (int)motorState);
       Blynk.virtualWrite(V6, (int)rainingState);
+
+      if (coverState != lastCoverState) {
+        lastCoverState = coverState;
+        String stringToSend = "Cover changed to: ";
+        switch (coverState) {
+          case RETRACTED:
+            stringToSend = stringToSend + "RETRACTED";
+            break;
+          case EXTENDED:
+            stringToSend = stringToSend + "EXTENDED";
+            break;
+          default:
+            stringToSend = stringToSend + "UNKNOWN";
+            break;
+        }
+        sendLineMessage(stringToSend);
+      }
 
     } else {
       Serial.println("Unexpected Message Type from BRAIN");
