@@ -9,6 +9,7 @@
 #include "payloads.hpp"
 
 #include <WiFi.h>
+#include <esp_now.h>
 #include <BlynkSimpleEsp32.h>
 
 
@@ -22,8 +23,6 @@ RainingState rainingState = DRY;
 
 //q
 QueueHandle_t eventQueue  = nullptr;
-QueueHandle_t motorQueue  = nullptr;
-QueueHandle_t espNowQueue = nullptr;
 
 TaskHandle_t sensorTaskHandler;
 
@@ -34,6 +33,7 @@ void setupWifiAndBlynk();
 void setupSensorsMint();
 void readSensorsTask(void *pvParameters);
 void setupEspNow();  
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 
 void setup() {
   Serial.begin(115200);
