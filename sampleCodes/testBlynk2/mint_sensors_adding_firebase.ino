@@ -44,6 +44,7 @@ DallasTemperature ds18b20(&oneWire);
 extern CoverState   coverState;
 extern MotorState   motorState;
 extern RainingState rainingState;
+String makeKey(DateTime now);
 
 void setupSensorsMint() {
   dht1.begin();
@@ -77,15 +78,17 @@ void setupSensorsMint() {
   Firebase.reconnectWiFi(true);
   rtc.begin();
 }
+String makeKey(DateTime now) {
+  return String(now.unixtime()) + "_" + String(millis());
+}
+
 
 //read every 1 sec
 void readSensorsTask(void *pvParameters) {
   for (;;) {
     DateTime now = rtc.now();
 
-    String datetime = String(now.year()) + "-" +String(now.month()) + "-" +String(now.day()) + " " +
-                    String(now.hour()) + ":" +String(now.minute()) + ":" +String(now.second());
-
+    String datetime =  makeKey(now);
 
     float h1 = dht1.readHumidity();
     float h2 = dht2.readHumidity();
@@ -107,7 +110,6 @@ void readSensorsTask(void *pvParameters) {
     if (!isnan(t_ds)) {
       Blynk.virtualWrite(V2, t_ds);
       json.set("Humidity_Env", t_ds);
-
     }
 
     Blynk.virtualWrite(V3, lightRaw);
@@ -121,7 +123,8 @@ void readSensorsTask(void *pvParameters) {
     json.set("MotorInProcess", (int)motorState);
 
     Blynk.virtualWrite(V6, (int)rainingState);
-    json.set("Command", (int)rainingState);
+    json.set("RainProtectorStatus", (int)rainingState);
+
     String path = "/RealtimeData/" + datetime;
     if (Firebase.RTDB.setJSON(&fbdo, path, &json)) {
       Serial.println("OK");
