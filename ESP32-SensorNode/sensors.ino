@@ -32,3 +32,22 @@ void readRaindrop(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
+//read esps3 from uart
+void readVoiceUART() {
+  if (VOICE_UART.available()) {
+    String cmd = VOICE_UART.readStringUntil('\n');
+    cmd.trim();
+
+    EventType e;
+    if (cmd == "CMD_EXTEND") {
+      e = CMD_EXTEND;
+    } else if (cmd == "CMD_RETRACT") {
+      e = CMD_RETRACT;
+    } else {
+      return;
+    }
+
+    xQueueSend(eventQueue, &e, portMAX_DELAY);
+  }
+}
+
