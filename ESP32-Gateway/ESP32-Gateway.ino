@@ -47,9 +47,9 @@ bool firebaseReady = false;
 // V6: close/open command
 // V8: coverState == rainProtectorStatus (0=UNKNOWN,1=RETRACTED,2=EXTENDED)
 
-#define DHTTYPE      DHT11
-#define DHTPIN1      27
-#define DHTPIN2      26
+#define DHTTYPE DHT11
+#define DHTPIN1 27
+#define DHTPIN2 26
 #define ONE_WIRE_BUS 25
 #define LIGHT_AO_PIN 34
 
@@ -62,26 +62,27 @@ DallasTemperature ds18b20(&oneWire);
 BlynkTimer timer;
 
 
-CoverState   coverState   = UNKNOWN;
-MotorState   motorState   = HALT;
+CoverState coverState = UNKNOWN;
+MotorState motorState = HALT;
 RainingState rainingState = DRY;
 
 TaskHandle_t espNowTaskHandler;
 QueueHandle_t espNowQueue;
 
 //mac
-uint8_t MINT_MAC[]  = { 0x44, 0x1D, 0x64, 0xBE, 0x24, 0xCC };  // THIS BOARD
-uint8_t BRAIN_MAC[] = { 0x08, 0xA6, 0xF7, 0xB1, 0xD8, 0xB4 };
-uint8_t BEAU_MAC[]  = { 0xD0, 0xCF, 0x13, 0x15, 0x4A, 0x2C };
+uint8_t MINT_MAC[] = { 0x44, 0x1D, 0x64, 0xBE, 0x24, 0xCC };
+uint8_t BRAIN_MAC[] = { 0x28, 0x56, 0x2F, 0x49, 0x6A, 0x54 };
+// uint8_t BEAU_MAC[]  = { 0xD0, 0xCF, 0x13, 0x15, 0x4A, 0x2C };
 
 Packet receivedPacket;
 esp_now_peer_info_t peerInfo;
 static uint16_t seqTx = 0;
 
 // line -----------------------
-String LINE_TOKEN = "+Awb8i1H9s7XzsTg89412DCVvYwAXnwOryF4h0zKOSyBuvlf8/8a87jGS0n7C+BTDAtOzcmaYMY5gkqVNFbbs9Dr+ilsdxtfB+WolEtRqtNbEti4sAvGJHHsWAm8PUm35fCkC4GOgLBZYlEHEAQS5QdB04t89/1O/w1cDnyilFU="; // Channel access token
+String LINE_TOKEN = "+Awb8i1H9s7XzsTg89412DCVvYwAXnwOryF4h0zKOSyBuvlf8/8a87jGS0n7C+BTDAtOzcmaYMY5gkqVNFbbs9Dr+ilsdxtfB+WolEtRqtNbEti4sAvGJHHsWAm8PUm35fCkC4GOgLBZYlEHEAQS5QdB04t89/1O/w1cDnyilFU=";  // Channel access token
 String GROUP_ID = "Ca28231dfd82d32667d5c5c81756ccbfb";
-
+volatile bool linemsgpending = false;
+String pendinglinemsg;
 void sendLineMessage(String message) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -90,6 +91,8 @@ void sendLineMessage(String message) {
     http.addHeader("Authorization", "Bearer " + LINE_TOKEN);
 
     String payload = "{\"to\":\"" + GROUP_ID + "\",\"messages\":[{\"type\":\"text\",\"text\":\"" + message + "\"}]}";
+    Serial.print("[LINE] Payload to send: ");
+    Serial.println(payload);
     int httpResponseCode = http.POST(payload);
 
     Serial.print("LINE Response: ");
@@ -103,8 +106,7 @@ void sendLineMessage(String message) {
 CoverState lastCoverState = UNKNOWN;
 // ESP NOW ----------------------------
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? 
-                 "Delivery Success" : "Delivery Fail");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
@@ -119,44 +121,45 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
   Serial.print("Bytes received: ");
   Serial.println(len);
 
- 
-  if (memcmp(mac_addr, BRAIN_MAC, 6) == 0) {
 
-    if (receivedPacket.header.type == MSG_STATE) {
+  // if (memcmp(mac_addr, BRAIN_MAC, 6) == 0) {
 
-      coverState   = receivedPacket.payload.state.coverState;
-      motorState   = receivedPacket.payload.state.motorState;
-      rainingState = receivedPacket.payload.state.rainingState;
+  if (receivedPacket.header.type == MSG_STATE) {
 
-      Serial.println("STATE UPDATE FROM BRAIN:");
-      Serial.printf("Cover=%d Motor=%d Rain=%d\n",
-                    coverState, motorState, rainingState);
+    coverState = receivedPacket.payload.state.coverState;
+    motorState = receivedPacket.payload.state.motorState;
+    rainingState = receivedPacket.payload.state.rainingState;
 
-   
-      Blynk.virtualWrite(V8, (int)coverState);
-      Blynk.virtualWrite(V5, (int)motorState);
-      Blynk.virtualWrite(V4, (int)rainingState);
+    Serial.println("STATE UPDATE FROM BRAIN:");
+    Serial.printf("Cover=%d Motor=%d Rain=%d\n",
+                  coverState, motorState, rainingState);
 
-      if (coverState != lastCoverState) {
-        lastCoverState = coverState;
-        String stringToSend = "Cover changed to: ";
-        switch (coverState) {
-          case RETRACTED:
-            stringToSend = stringToSend + "RETRACTED";
-            break;
-          case EXTENDED:
-            stringToSend = stringToSend + "EXTENDED";
-            break;
-          default:
-            stringToSend = stringToSend + "UNKNOWN";
-            break;
-        }
-        sendLineMessage(stringToSend);
+
+    Blynk.virtualWrite(V8, (int)coverState);
+    Blynk.virtualWrite(V5, (int)motorState);
+    Blynk.virtualWrite(V4, (int)rainingState);
+
+    if (coverState != lastCoverState) {
+      lastCoverState = coverState;
+      String stringToSend = "Cover changed to: ";
+      switch (coverState) {
+        case RETRACTED:
+          stringToSend = stringToSend + "RETRACTED";
+          break;
+        case EXTENDED:
+          stringToSend = stringToSend + "EXTENDED";
+          break;
+        default:
+          stringToSend = stringToSend + "UNKNOWN";
+          break;
       }
-
-    } else {
-      Serial.println("Unexpected Message Type from BRAIN");
+      pendinglinemsg = stringToSend;
+      linemsgpending = true;
     }
+
+    // } else {
+    //   Serial.println("Unexpected Message Type from BRAIN");
+    // }
 
   } else {
     Serial.println("Unknown source of received data");
@@ -164,21 +167,21 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 }
 
 void test_espnow_receive() {
-    Packet fake;
+  Packet fake;
 
-    // Fake header: as if it comes from BRAIN
-    fake.header.src  = BRAIN;
-    fake.header.dst  = MINT;
-    fake.header.type = MSG_STATE;
-    fake.header.seq  = 1;
+  // Fake header: as if it comes from BRAIN
+  fake.header.src = BRAIN;
+  fake.header.dst = MINT;
+  fake.header.type = MSG_STATE;
+  fake.header.seq = 1;
 
-    // Fake state payload
-    fake.payload.state.coverState   = EXTENDED; // or RETRACTED
-    fake.payload.state.motorState   = WORKING;  // or HALT
-    fake.payload.state.rainingState = RAINING;  // or DRY
+  // Fake state payload
+  fake.payload.state.coverState = EXTENDED;   // or RETRACTED
+  fake.payload.state.motorState = WORKING;    // or HALT
+  fake.payload.state.rainingState = RAINING;  // or DRY
 
-    // Pretend the packet comes from the real BRAIN MAC
-    OnDataRecv(BRAIN_MAC, (uint8_t*)&fake, sizeof(fake));
+  // Pretend the packet comes from the real BRAIN MAC
+  OnDataRecv(BRAIN_MAC, (uint8_t *)&fake, sizeof(fake));
 }
 
 
@@ -192,14 +195,14 @@ void espNowTask(void *pvParameters) {
 
       switch (p.header.dst) {
 
-      case BRAIN:
-        if (esp_now_send(BRAIN_MAC, (uint8_t*)&p, sizeof(p)) != ESP_OK) {
-          Serial.println("Error sending to BRAIN");
-        }
-        break;
+        case BRAIN:
+          if (esp_now_send(BRAIN_MAC, (uint8_t *)&p, sizeof(p)) != ESP_OK) {
+            Serial.println("Error sending to BRAIN");
+          }
+          break;
 
-      default:
-        Serial.println("Illegal Destination for MINT");
+        default:
+          Serial.println("Illegal Destination for MINT");
       }
     }
 
@@ -241,15 +244,15 @@ void setupEspNow() {
   // Queue + Task
   espNowQueue = xQueueCreate(16, sizeof(Packet));
   xTaskCreatePinnedToCore(
-      espNowTask,
-      "esp-now-task",
-      8192,
-      NULL,
-      2,
-      &espNowTaskHandler,
-      1  // ย้ายไป core1 เพื่อไม่ชน sensor task
+    espNowTask,
+    "esp-now-task",
+    8192,
+    NULL,
+    2,
+    &espNowTaskHandler,
+    1  // ย้ายไป core1 เพื่อไม่ชน sensor task
   );
-  
+
   Serial.println("Successfully add Queue Task");
 }
 
@@ -257,26 +260,25 @@ void sendCmdToSensorNode(bool openCover) {
 
   Packet p;
 
-  p.header.src  = MINT;
-  p.header.dst  = BRAIN;
+  p.header.src = MINT;
+  p.header.dst = BRAIN;
   p.header.type = MSG_CMD;
-  p.header.seq  = ++seqTx;
+  p.header.seq = ++seqTx;
 
   p.payload.cmd.openCover = openCover;
 
-  if (esp_now_send(BRAIN_MAC, (uint8_t*)&p, sizeof(p)) != ESP_OK) {
+  if (esp_now_send(BRAIN_MAC, (uint8_t *)&p, sizeof(p)) != ESP_OK) {
     Serial.println("Error sending CMD to BRAIN");
   }
-  
+
   Serial.println("Successfully send cmd to BRAIN");
   Serial.println(p.payload.cmd.openCover);
-   
 }
 void test_send_command() {
-    Serial.println("=== Test sendCmdToSensorNode() ===");
-    sendCmdToSensorNode(true);   // simulate "open cover" command
-    sendCmdToSensorNode(false);  // simulate "close cover" command
-    Serial.println("=== Finished test_send_command ===");
+  Serial.println("=== Test sendCmdToSensorNode() ===");
+  sendCmdToSensorNode(true);   // simulate "open cover" command
+  sendCmdToSensorNode(false);  // simulate "close cover" command
+  Serial.println("=== Finished test_send_command ===");
 }
 
 
@@ -286,8 +288,8 @@ void test_send_command() {
 BLYNK_WRITE(V6) {
   int v = param.asInt();
 
-  if (v == 1) sendCmdToSensorNode(true);   // EXTEND
-  else        sendCmdToSensorNode(false);  // RETRACT
+  if (v == 1) sendCmdToSensorNode(true);  // EXTEND
+  else sendCmdToSensorNode(false);        // RETRACT
 }
 
 BLYNK_CONNECTED() {
@@ -340,10 +342,10 @@ void sendSensorsToBlynk() {
     return;
   }
 
-  json.clear(); 
+  json.clear();
   if (!isnan(t_ds)) json.set("Temp", t_ds);
-  if (!isnan(h1))  json.set("Humidity_Clothes", h1);
-  if (!isnan(h2))  json.set("Humidity_Env", h2);
+  if (!isnan(h1)) json.set("Humidity_Clothes", h1);
+  if (!isnan(h2)) json.set("Humidity_Env", h2);
 
 
   json.set("Light", lightRaw);
@@ -381,7 +383,7 @@ void sendSensorsToBlynk() {
 // Call this once in setup(), after WiFi is connected
 void setupFirebase() {
   // Sync time via NTP (needed to make Firebase tokens work correctly)
-  Serial.println("[Firebase] Syncing time via NTP...");
+  Serial.print("[Firebase] Syncing time via NTP...");
   configTime(0, 0, "pool.ntp.org", "time.nist.gov");
   time_t now = time(nullptr);
 
@@ -393,7 +395,7 @@ void setupFirebase() {
   Serial.println("\n[Firebase] Time synced!");
 
   // Basic Firebase config
-  config.api_key      = API_KEY;
+  config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
   // Anonymous sign up (no email/password)
@@ -449,14 +451,19 @@ void loop() {
   // Run BlynkTimer (calls sendSensorsToBlynk every 1s)
   timer.run();
 
-  // if (Serial.available()) {
-  //   char c = Serial.read();
-  //   if (c == 'r') {
-  //     test_espnow_receive();
-  //   } else if (c == 'c') {
-  //     test_send_command();
-  //   }
-  // }
+  if (linemsgpending) {
+    sendLineMessage(pendinglinemsg);
+    linemsgpending = false;
+  }
+  if (Serial.available()) {
+    char c = Serial.read();
+    if (c == 'r') {
+      test_espnow_receive();
+    } else if (c == 'c') {
+      test_send_command();
+      sendLineMessage("test");
+    }
+  }
 
   delay(10);
 }
