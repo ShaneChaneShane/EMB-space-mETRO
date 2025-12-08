@@ -9,20 +9,18 @@ module.exports = function evaluateSensorData(
 ) {
   const rainStatus = rain == 1 ? RainStatus.RAINING : RainStatus.NO_RAIN;
 
-  // SOME IMAGINARY LOGIC TO DETERMINE SUNLIGHT LEVEL
   const sunlightLevel =
-    light > 2850 // 75% of 4095
+    light > 3685 // 90% of 4095
       ? SunlightLevel.VERY_HIGH
-      : light > 2648 // 65% of 4095
+      : light > 3276 // 80% of 4095
       ? SunlightLevel.HIGH
-      : light > 1630 // 40% of 4095
+      : light > 1228 // 30% of 4095
       ? SunlightLevel.MODERATE
       : SunlightLevel.LOW;
   const humidityDiff = humidityClothes - humidityEnv;
 
   const step = (DrynessLevel.MAX - DrynessLevel.MIN) / 5;
 
-  // SOME IMAGINARY LOGIC TO DETERMINE DRYNESS LEVEL
   const drynessLevel =
     humidityDiff > 30
       ? DrynessLevel.MIN

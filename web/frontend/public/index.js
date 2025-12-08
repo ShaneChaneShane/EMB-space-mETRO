@@ -339,8 +339,11 @@ async function refresh() {
 
         // get data
         const weatherData = await getWeatherStatus();
+          // wait 2 seconds before calling protector status
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // now get protector status
         const protectorData = await getProtectorStatus();
-        
         const humid = weatherData.data.humidity || 0;
         const isRaining = weatherData.data.rain == 'raining' || false;
 
@@ -355,7 +358,7 @@ async function refresh() {
 
             // exit loading screen
             loadingScreen("stop");
-
+            console.log(status)
             // update UI
             updateStatusCard(status);
             updateRaingCard(isRaining, temp, humid);
@@ -401,7 +404,6 @@ async function changeProtectorState() {
         setTimeout(async () => {
             await refresh();
         }, 1000)
-
         pushNotification(`Status changed successfully`, true);
 
     } catch (error) {

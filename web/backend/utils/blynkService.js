@@ -12,11 +12,11 @@ module.exports = async function getWeatherFromBlynk() {
     return {
       success: true,
       data: {
-        humidityEnv: Number(response.data.V2),
-        humidityClothes: Number(response.data.V1),
-        rain: Number(response.data.V4),
         temperature: Number(response.data.V0),
+        humidityClothes: Number(response.data.V1),
+        humidityEnv: Number(response.data.V2),
         light: Number(response.data.V3),
+        rain: Number(response.data.V4)==1?0:1,
         // MOCK DATA
         // humidityEnv: 20,
         // humidityClothes: 100,
@@ -36,15 +36,13 @@ module.exports = async function getWeatherFromBlynk() {
 module.exports.getRainProtectorStatus = async function () {
   try {
     // FETCH BLYNK DATA
-    // const getStatusUrl = `https://blynk.cloud/external/api/get?token=${BLYNK_TOKEN}&${BLYNK_RAIN_PROTECTOR_STATUS_PIN}`;
-    // const getStatusResponse = await axios.get(getStatusUrl);
-    // const isOpen = getStatusResponse.data == "open";
+    const getStatusUrl = `https://blynk.cloud/external/api/get?token=${BLYNK_TOKEN}&V8`;
+    const getStatusResponse = await axios.get(getStatusUrl);
+    const isOpen = getStatusResponse.data == 1 ? true : false;
     return {
       success: true,
       data: {
-        // isOpen: isOpen,
-        // MOCK
-        isOpen: false,
+        isOpen: isOpen,
       },
     };
   } catch (err) {
@@ -59,28 +57,20 @@ module.exports.switchRainProtector = async function (shouldOpen) {
   try {
     // FETCH BLYNK DATA
     // check if motor is processing
-    // const getProcessingUrl = `https://blynk.cloud/external/api/get?token=${BLYNK_TOKEN}&${BLYNK_MOTOR_PROCESSING_PIN}`;
-    // const getProcessingResponse = await axios.get(getProcessingUrl);
-    // const isProcessing = Number(getProcessingResponse.data) === 1;
-    // if (isProcessing) {
-    //   throw new Error("Rain protector is currently processing");
-    // }
+    const getProcessingUrl = `https://blynk.cloud/external/api/get?token=${BLYNK_TOKEN}&V5`;
+    const getProcessingResponse = await axios.get(getProcessingUrl);
+    const isProcessing = Number(getProcessingResponse.data) === 1;
+    if (isProcessing) {
+      throw new Error("Rain protector is currently processing");
+    }
 
-    // // update
-    // const value = shouldOpen ? 1 : 0;
-    // const newData = "test from API";
-    // const updateUrl = `https://blynk.cloud/external/api/update?token=${BLYNK_TOKEN}&V1=${newData}`;
-    // const updateResponse = await axios.post(updateUrl);
-    // console.log(updateResponse.data);
-    // const updateUrl = `https://blynk.cloud/external/api/update?token=${BLYNK_TOKEN}&${BLYNK_RAIN_PROTECTOR_COMMAND_PIN}=${value}`;
-    // const updateResponse = await axios.get(updateUrl);
-
-    const success =
-      // updateResponse.data === true || updateResponse.data === "true";
-      true; // MOCK
+    // update
+    const value = shouldOpen ? 0 : 1;
+    const updateUrl = `https://blynk.cloud/external/api/update?token=${BLYNK_TOKEN}&V6=${value}`;
+    const updateResponse = await axios.get(updateUrl);
 
     return {
-      success,
+      success: true,
       data: {
         isOpen: shouldOpen,
       },
