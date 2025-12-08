@@ -29,13 +29,15 @@ void readRaindrop(void *pvParameters) {
       xQueueSend(eventQueue, &event, portMAX_DELAY); // only send if state change
       lastEvent = event;
     }
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(5000));
   }
 }
 //read esps3 from uart
 void readVoiceUART() {
   if (VOICE_UART.available()) {
     String cmd = VOICE_UART.readStringUntil('\n');
+    Serial.println("UART RECEIVED !!! It says ");
+    Serial.print(cmd);
     cmd.trim();
 
     EventType e;

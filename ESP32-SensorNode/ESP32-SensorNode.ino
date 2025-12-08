@@ -37,7 +37,7 @@ void sendStateTask(void *pvParameters) {
     if (xQueueSend(espNowQueue, &p, portMAX_DELAY) != pdTRUE) {
       Serial.println("Failed to send to esp-now queue");
     }
-    vTaskDelay(pdMS_TO_TICKS(5000)); // send every x milliseconds
+    vTaskDelay(pdMS_TO_TICKS(1000)); // send every x milliseconds
   }
 }
 // ===== ESP-NOW receive callback (จาก Beau) =====

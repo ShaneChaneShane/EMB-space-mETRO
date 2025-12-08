@@ -67,7 +67,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
 
   memcpy(&receivedPacket, incomingData, sizeof(Packet));
 
-  if (memcmp(mac_addr, MINT_MAC, 6) == 0 || memcmp(mac_addr, BEAU_MAC, 6) == 0) {
+  // if (memcmp(mac_addr, MINT_MAC, 6) == 0 || memcmp(mac_addr, BEAU_MAC, 6) == 0) {
     EventType event;
     switch (receivedPacket.header.type) {
       case MSG_CMD:
@@ -87,9 +87,9 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
         Serial.println("Unexpected/Undefined message type received");
         break;
     }
-  } else {
-    Serial.println("Unknown source of received data");
-  }
+  // } else {
+  //   Serial.println("Unknown source of received data");
+  // }
 }
 
 
