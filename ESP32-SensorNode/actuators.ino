@@ -45,7 +45,7 @@ void motorTask(void *pvParameters) {
         digitalWrite(motorControlA_pin, HIGH);
         digitalWrite(motorControlB_pin, LOW);
         motorState = WORKING;
-        vTaskDelay(pdMS_TO_TICKS(8000));
+        vTaskDelay(pdMS_TO_TICKS(4000));
 
         
         WantedState afterCommand = NONE;
@@ -58,7 +58,7 @@ void motorTask(void *pvParameters) {
         digitalWrite(motorControlA_pin, LOW);
         digitalWrite(motorControlB_pin, HIGH);
         motorState = WORKING;
-        vTaskDelay(pdMS_TO_TICKS(8000));
+        vTaskDelay(pdMS_TO_TICKS(4000));
 
         WantedState afterCommand = NONE;
         xQueueSend(motorQueue, &afterCommand, portMAX_DELAY);
