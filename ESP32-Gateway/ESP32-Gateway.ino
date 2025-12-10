@@ -1,0 +1,469 @@
+#define BLYNK_TEMPLATE_ID "TMPL6T0nHp_OC"
+#define BLYNK_TEMPLATE_NAME "test"
+#define BLYNK_AUTH_TOKEN "ySDWkab4D1FH10wZajhC_w89sxmfY8jT"
+
+// FIREBASE
+#include <Firebase_ESP_Client.h>
+#include "addons/TokenHelper.h"
+#include "addons/RTDBHelper.h"
+#include <time.h>  // for time()
+
+// Use the same values you had in mint_sensors_adding_firebase.ino
+#define API_KEY "AIzaSyDmHL2GsIO3qv3ZUjLeKLAO8foffQ-7FiY"
+#define DATABASE_URL "https://emb-space-metro-default-rtdb.asia-southeast1.firebasedatabase.app/"
+
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+FirebaseJson json;
+
+
+bool signupOk = false;
+bool firebaseReady = false;
+
+// ----------
+
+#include "globals.hpp"
+#include "payloads.hpp"
+
+#include <esp_now.h>
+#include <esp_wifi.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// sensors
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include "DHT.h"
+#include <BlynkSimpleEsp32.h>
+
+// --- Sensor to pin mapping (from mint_sensors_adding_firebase.ino) ---
+// V0: temp
+// V1: humid1
+// V2: humid2
+// V3: light raw
+// V4: rainingState (0=DRY,1=RAINING)
+// V5: motorState (0=HALT,1=WORKING)
+// V6: close/open command
+// V8: coverState == rainProtectorStatus (0=UNKNOWN,1=RETRACTED,2=EXTENDED)
+
+#define DHTTYPE DHT11
+#define DHTPIN1 27
+#define DHTPIN2 26
+#define ONE_WIRE_BUS 25
+#define LIGHT_AO_PIN 34
+
+DHT dht1(DHTPIN1, DHTTYPE);
+DHT dht2(DHTPIN2, DHTTYPE);
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature ds18b20(&oneWire);
+
+// Blynk timer for periodic sending
+BlynkTimer timer;
+
+
+CoverState coverState = UNKNOWN;
+MotorState motorState = HALT;
+RainingState rainingState = DRY;
+
+TaskHandle_t espNowTaskHandler;
+QueueHandle_t espNowQueue;
+
+//mac
+uint8_t MINT_MAC[] = { 0x44, 0x1D, 0x64, 0xBE, 0x24, 0xCC };
+uint8_t BRAIN_MAC[] = { 0x28, 0x56, 0x2F, 0x49, 0x6A, 0x54 };
+// uint8_t BEAU_MAC[]  = { 0xD0, 0xCF, 0x13, 0x15, 0x4A, 0x2C };
+
+Packet receivedPacket;
+esp_now_peer_info_t peerInfo;
+static uint16_t seqTx = 0;
+
+// line -----------------------
+String LINE_TOKEN = "+Awb8i1H9s7XzsTg89412DCVvYwAXnwOryF4h0zKOSyBuvlf8/8a87jGS0n7C+BTDAtOzcmaYMY5gkqVNFbbs9Dr+ilsdxtfB+WolEtRqtNbEti4sAvGJHHsWAm8PUm35fCkC4GOgLBZYlEHEAQS5QdB04t89/1O/w1cDnyilFU=";  // Channel access token
+String GROUP_ID = "Ca28231dfd82d32667d5c5c81756ccbfb";
+volatile bool linemsgpending = false;
+String pendinglinemsg;
+void sendLineMessage(String message) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("https://api.line.me/v2/bot/message/push");
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", "Bearer " + LINE_TOKEN);
+
+    String payload = "{\"to\":\"" + GROUP_ID + "\",\"messages\":[{\"type\":\"text\",\"text\":\"" + message + "\"}]}";
+    Serial.print("[LINE] Payload to send: ");
+    Serial.println(payload);
+    int httpResponseCode = http.POST(payload);
+
+    Serial.print("LINE Response: ");
+    Serial.println(httpResponseCode);
+    http.end();
+  }
+}
+// ----------------------------
+
+
+CoverState lastCoverState = UNKNOWN;
+// ESP NOW ----------------------------
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+}
+
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
+
+  if (len > sizeof(receivedPacket)) {
+    Serial.println("Error: Data size exceeds expected packet size!");
+    return;
+  }
+
+  memcpy(&receivedPacket, incomingData, sizeof(receivedPacket));
+
+  Serial.print("Bytes received: ");
+  Serial.println(len);
+
+
+  // if (memcmp(mac_addr, BRAIN_MAC, 6) == 0) {
+
+  if (receivedPacket.header.type == MSG_STATE) {
+
+    coverState = receivedPacket.payload.state.coverState;
+    motorState = receivedPacket.payload.state.motorState;
+    rainingState = receivedPacket.payload.state.rainingState;
+
+    Serial.println("STATE UPDATE FROM BRAIN:");
+    Serial.printf("Cover=%d Motor=%d Rain=%d\n",
+                  coverState, motorState, rainingState);
+
+
+    Blynk.virtualWrite(V8, (int)coverState);
+    Blynk.virtualWrite(V5, (int)motorState);
+    Blynk.virtualWrite(V4, (int)rainingState);
+
+    if (coverState != lastCoverState) {
+      lastCoverState = coverState;
+      String stringToSend = "Cover changed to: ";
+      switch (coverState) {
+        case RETRACTED:
+          stringToSend = stringToSend + "RETRACTED";
+          break;
+        case EXTENDED:
+          stringToSend = stringToSend + "EXTENDED";
+          break;
+        default:
+          stringToSend = stringToSend + "UNKNOWN";
+          break;
+      }
+      pendinglinemsg = stringToSend;
+      linemsgpending = true;
+    }
+
+    // } else {
+    //   Serial.println("Unexpected Message Type from BRAIN");
+    // }
+
+  } else {
+    Serial.println("Unknown source of received data");
+  }
+}
+
+void test_espnow_receive() {
+  Packet fake;
+
+  // Fake header: as if it comes from BRAIN
+  fake.header.src = BRAIN;
+  fake.header.dst = MINT;
+  fake.header.type = MSG_STATE;
+  fake.header.seq = 1;
+
+  // Fake state payload
+  fake.payload.state.coverState = EXTENDED;   // or RETRACTED
+  fake.payload.state.motorState = WORKING;    // or HALT
+  fake.payload.state.rainingState = RAINING;  // or DRY
+
+  // Pretend the packet comes from the real BRAIN MAC
+  OnDataRecv(BRAIN_MAC, (uint8_t *)&fake, sizeof(fake));
+}
+
+
+
+void espNowTask(void *pvParameters) {
+
+  Packet p;
+
+  for (;;) {
+    if (xQueueReceive(espNowQueue, &p, portMAX_DELAY)) {
+
+      switch (p.header.dst) {
+
+        case BRAIN:
+          if (esp_now_send(BRAIN_MAC, (uint8_t *)&p, sizeof(p)) != ESP_OK) {
+            Serial.println("Error sending to BRAIN");
+          }
+          break;
+
+        default:
+          Serial.println("Illegal Destination for MINT");
+      }
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
+
+void setupEspNow() {
+
+  WiFi.mode(WIFI_STA);
+
+
+  WiFi.begin("Hi", "Noon12345");
+  while (WiFi.status() != WL_CONNECTED) delay(10);
+
+  Serial.print("WiFi channel: ");
+  Serial.println(WiFi.channel());
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW initialization failed");
+    return;
+  }
+
+  // Register callbacks
+  esp_now_register_send_cb(esp_now_send_cb_t(OnDataSent));
+  esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+
+  // Set peer = BRAIN
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, BRAIN_MAC, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add peer");
+    return;
+  }
+  Serial.println("Successfully add peer");
+  // Queue + Task
+  espNowQueue = xQueueCreate(16, sizeof(Packet));
+  xTaskCreatePinnedToCore(
+    espNowTask,
+    "esp-now-task",
+    8192,
+    NULL,
+    2,
+    &espNowTaskHandler,
+    1  // ย้ายไป core1 เพื่อไม่ชน sensor task
+  );
+
+  Serial.println("Successfully add Queue Task");
+}
+
+void sendCmdToSensorNode(bool openCover) {
+
+  Packet p;
+
+  p.header.src = MINT;
+  p.header.dst = BRAIN;
+  p.header.type = MSG_CMD;
+  p.header.seq = ++seqTx;
+
+  p.payload.cmd.openCover = openCover;
+
+  if (esp_now_send(BRAIN_MAC, (uint8_t *)&p, sizeof(p)) != ESP_OK) {
+    Serial.println("Error sending CMD to BRAIN");
+  }
+
+  Serial.println("Successfully send cmd to BRAIN");
+  Serial.println(p.payload.cmd.openCover);
+}
+void test_send_command() {
+  Serial.println("=== Test sendCmdToSensorNode() ===");
+  sendCmdToSensorNode(true);   // simulate "open cover" command
+  sendCmdToSensorNode(false);  // simulate "close cover" command
+  Serial.println("=== Finished test_send_command ===");
+}
+
+
+
+// ----------------------------
+// BLYNK ---------------------
+BLYNK_WRITE(V6) {
+  int v = param.asInt();
+
+  if (v == 1) sendCmdToSensorNode(true);  // EXTEND
+  else sendCmdToSensorNode(false);        // RETRACT
+}
+
+BLYNK_CONNECTED() {
+  Blynk.syncAll();
+}
+void sendSensorsToBlynk() {
+  // Read sensors
+  float h1 = dht1.readHumidity();
+  float h2 = dht2.readHumidity();
+  Serial.println("READ HUMIDITY 1 AND 2");
+  Serial.println(h1);
+  Serial.println(h2);
+  Serial.println("----------");
+  ds18b20.requestTemperatures();
+  float t_ds = ds18b20.getTempCByIndex(0);
+  Serial.println("READ TEMPERATURE");
+  Serial.println(t_ds);
+  Serial.println("----------");
+  int lightRaw = analogRead(LIGHT_AO_PIN);
+  Serial.println("READ LIGHT");
+  Serial.println(lightRaw);
+  Serial.println("----------");
+  // Send to Blynk (same mapping as mint_sensors_adding_firebase.ino)
+  if (!isnan(h1)) {
+    Blynk.virtualWrite(V1, h1);
+    Serial.println("BLYNKL: WROTE HUMIDITY 1 (CLOTHES) TO V1");
+  }
+  if (!isnan(h2)) {
+    Blynk.virtualWrite(V2, h2);
+    Serial.println("BLYNKL: WROTE HUMIDITY 2 (ENV) TO V2");
+  }
+  if (!isnan(t_ds)) {
+    Blynk.virtualWrite(V0, t_ds);
+    Serial.println("BLYNKL: WROTE TEMP TO V0");
+  }
+
+
+  Blynk.virtualWrite(V3, lightRaw);
+  Serial.println("BLYNKL: WROTE LIGHT TO V3");
+
+  // States coming from the “brain” / ESP-NOW logic
+  Blynk.virtualWrite(V8, (int)coverState);
+  Blynk.virtualWrite(V5, (int)motorState);
+  Blynk.virtualWrite(V4, (int)rainingState);
+
+  // Prepare JSON for Firebase
+  if (!firebaseReady) {
+    Serial.println("[Firebase] Not ready yet, skip upload");
+    Serial.println("-----------------------------");
+    return;
+  }
+
+  json.clear();
+  if (!isnan(t_ds)) json.set("Temp", t_ds);
+  if (!isnan(h1)) json.set("Humidity_Clothes", h1);
+  if (!isnan(h2)) json.set("Humidity_Env", h2);
+
+
+  json.set("Light", lightRaw);
+  json.set("Rain", (int)rainingState);               // 0=DRY, 1=RAINING
+  json.set("MotorInProcess", (int)motorState);       // 0=HALT, 1=WORKING
+  json.set("RainProtectorStatus", (int)coverState);  // 0=UNKNOWN,1=RETRACTED,2=EXTENDED
+
+
+  // Make a unique key using current time + millis
+  time_t now = time(nullptr);
+  if (now < 100000) {
+    Serial.println("[Firebase] Time not valid yet, skip upload");
+    Serial.println("-----------------------------");
+    return;
+  }
+  String key = String((unsigned long)now) + "_" + String(millis());
+  String path = "/RealtimeData/" + key;
+
+  Serial.print("[Firebase] Uploading to path: ");
+  Serial.println(path);
+
+  // === 4) Send JSON to Firebase ===
+  if (Firebase.RTDB.setJSON(&fbdo, path, &json)) {
+    Serial.println("[Firebase] Upload OK");
+  } else {
+    Serial.print("[Firebase] Upload FAILED: ");
+    Serial.println(fbdo.errorReason());
+  }
+
+  Serial.println("-----------------------------");
+}
+// ----------------------------
+
+// Firebase -------------------
+// Call this once in setup(), after WiFi is connected
+void setupFirebase() {
+  // Sync time via NTP (needed to make Firebase tokens work correctly)
+  Serial.print("[Firebase] Syncing time via NTP...");
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+  time_t now = time(nullptr);
+
+  while (now < 1700000000) {  // wait until time is reasonable (~2024+)
+    Serial.print(".");
+    delay(200);
+    now = time(nullptr);
+  }
+  Serial.println("\n[Firebase] Time synced!");
+
+  // Basic Firebase config
+  config.api_key = API_KEY;
+  config.database_url = DATABASE_URL;
+
+  // Anonymous sign up (no email/password)
+  Serial.println("[Firebase] Signing up...");
+  if (Firebase.signUp(&config, &auth, "", "")) {
+    Serial.println("[Firebase] SignUp successful");
+  } else {
+    Serial.printf("[Firebase] SignUp error: %s\n",
+                  config.signer.signupError.message.c_str());
+    return;  // do not continue
+  }
+
+  // Monitor token status (helper from TokenHelper.h)
+  config.token_status_callback = tokenStatusCallback;
+
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+
+  firebaseReady = true;
+  Serial.println("[Firebase] Firebase is ready");
+}
+
+
+
+// ----------------------------
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize ESP-NOW and WiFi
+  setupEspNow();
+
+  // Blynk: use existing WiFi connection
+  Blynk.config(BLYNK_AUTH_TOKEN);
+  Blynk.connect();
+
+  // --- Sensor init
+  dht1.begin();
+  dht2.begin();
+  ds18b20.begin();
+  pinMode(LIGHT_AO_PIN, INPUT);
+
+  // Send sensors & states to Blynk every 1 second
+  timer.setInterval(1000L, sendSensorsToBlynk);
+
+  // Firebase
+  setupFirebase();
+}
+
+void loop() {
+  // Let Blynk handle communication, widgets, etc.
+  Blynk.run();
+
+  // Run BlynkTimer (calls sendSensorsToBlynk every 1s)
+  timer.run();
+
+  if (linemsgpending) {
+    sendLineMessage(pendinglinemsg);
+    linemsgpending = false;
+  }
+  if (Serial.available()) {
+    char c = Serial.read();
+    if (c == 'r') {
+      test_espnow_receive();
+    } else if (c == 'c') {
+      test_send_command();
+      sendLineMessage("test");
+    }
+  }
+
+  delay(10);
+}
