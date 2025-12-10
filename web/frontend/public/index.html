@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/gh/lazywasabi/thai-web-fonts@7.5.0/fonts/LINESeedSansTH/LINESeedSansTH.css" rel="stylesheet" />
+    <link href="./style.css" rel="stylesheet">
+    <script src="index.js"></script>
+    <title>Dashboard</title>
+  </head>
+
+  <body class="flex justify-center min-h-screen md:items-center -z-100">
+
+    <!-- frame -->
+    <div id="base" class="w-full min-w-[340px] max-w-[440px] h-fit
+    px-5 py-4 flex flex-col space-y-3">
+
+        <!-- title -->
+        <div class="w-full h-fit flex justify-between items-center">
+            <p class="text-[32px] font-bold left-0 inline-block hover:animate-spin">Dashboard</p>
+            <div class="bg-(--tcolor-base1) w-11 h-11 rounded-full 
+            flex justify-center items-center card-shadow active:bg-(--tcolor-base2) z-60"
+            onclick="refresh()">
+                <img src="img/refresh.png" alt="refresh" class="w-9 h-9 hover:animate-spin z-70">
+            </div>
+        </div>
+
+        <!-- status-card -->
+        <div id="status-card" class="w-full h-[135px] bg-(--tcolor-white) rounded-2xl card-shadow border-(--cur-state-dark)
+         border-[3px] color-active-state flex justify-between px-4 py-2 duration-300">
+            <div class="-space-y-4">
+                <p class="txt-label">Status:</p>
+                <p id="status-text" class="txt-data text-(--cur-state-dark) duration-300">-</p>
+            </div>
+            <div id="status-botton" class="h-fill w-[110px] flex flex-col justify-center items-center p-2 space-y-1"
+            onclick="changeProtectorState()">
+                <div class="bg-(--tcolor-solid) active:bg-(--tcolor-base2) rounded-full w-17 h-17 p-3 hover:animate-bounce duration-300">
+                   <div class="icon-colored" style="--icon-color: var(--ncur-state-light); --icon-url: url('img/power.svg')"></div>
+                </div>
+                <p id="status-botton-text" class="text-[16px] font-bold text-(--ncur-state-dark) duration-300">-</p>
+            </div>
+        </div>
+
+        <!-- raining-card -->
+        <div id="raining-card" class="h-40 w-full bg-(--rcolor-bg) border-[3px] duration-300 border-(--rcolor-border) card-shadow rounded-2xl color-nraining relative overflow-hidden">
+            <div class="w-full h-full z-10 px-4 py-2 relative left-0 top-0">
+                <div class="-space-y-2">
+                    <p id="raining-temp" class="txt-data text-(--rcolor-text)">- °C</p>
+                    <p id="raining-state" class="txt-label text-(--rcolor-text)">-g</p>
+                    <p id="raining-humid" class="txt-label text-(--rcolor-text)">Humidity: -</p>
+                </div>
+            </div>
+            <div class="w-full h-full z-0 absolute left-0 top-0">
+                <div class="absolute -right-5 -top-1.5 ">
+                    <img id="raining-cloud" class="w-full h-full duration-300" src="img/cloud-nraining.svg"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full h-[135px] grid grid-cols-2 gap-2.5">
+
+            <!-- dryness-card -->
+            <div id="dryness-card" class="w-full h-full bg-(--tcolor-white) border-(--tcolor-base2) rounded-2xl card-shadow border-[3px] hover:animate-spin
+            px-4 py-2 overflow-hidden relative">
+                <div class="-space-y-2 z-20">
+                    <p class="txt-label">Dryness</p>
+                    <div class="flex flex-row items-baseline space-x-1">
+                        <p id="dryness-score" class="txt-data z-10 duration-300">-</p>
+                        <p class="txt-label text-(--tcolor-base1) z-10">/5</p>
+                    </div>
+                </div>
+                <div class="w-[127px] h-[98px] z-0 absolute max-[430px]:opacity-0 opacity-100 right-[-33.333%] top-1/2 -translate-y-1/2">
+                    <img id="dryness-img" class="w-full h-full duration-300" src="img/shirt-1.svg" />
+                </div>
+            </div>
+
+            <!-- light-card -->
+            <div id="explosion-frame" class="w-full h-full relative">
+                <div id="light-card" class="w-full h-full bg-(--lc-bg) border-(--lc-acc1) rounded-2xl card-shadow border-[3px]
+                light-card--high relative overflow-hidden -z-50 duration-500">
+                    <div class="-space-y-2 px-4 py-2 z-50">
+                        <p class="txt-label">Light</p>
+                        <p id="light-status" class="txt-data">-</p>
+                    </div> 
+                    <div class="absolute w-fit h-fit -right-1/4 -bottom-2/3 -z-30">
+                        <div id="light-sun3" class="rounded-full flex bg-(--lc-acc3) w-[171px] h-[171px] -z-20 items-center justify-center">
+                            <div id="light-sun2" class="rounded-full flex bg-(--lc-acc2) w-[127px] h-[127px] z-0 items-center justify-center">
+                                <div id="light-sun1" class="rounded-full flex bg-(--lc-acc1) w-[83px] h-[83px] z-10"></div>
+                            </div>
+                        </div>
+                    </div>             
+                </div>
+            </div>
+                
+        </div>
+
+        <!-- last update -->
+        <div id="bottom-box" class="py-4 relative">
+            <p id="last-update" class="text-[16px] text-(--tcolor-base1)">Last update: -</p>
+        </div>
+
+
+    </div>
+
+  </body>
+</html>

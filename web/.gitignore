@@ -1,0 +1,47 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# Build output
+build/
+dist/
+public/build/ # If your React build output goes into a public/build directory
+out/
+
+# Environment variables
+*.env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Editor/IDE specific files
+.vscode/ # VS Code specific settings
+.idea/ # IntelliJ IDEA specific settings
+*.swp # Vim swap files
+*.swo # Vim swap files
+*.bak # Backup files
+
+# Operating System files
+.DS_Store # macOS
+Thumbs.db # Windows
+ehthumbs.db # Windows
+desktop.ini # Windows
+
+# Test coverage
+coverage/
+
+# Misc
+.cache/
+.nyc_output/

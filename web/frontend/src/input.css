@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@layer base {
+    :root {
+        --tcolor-white: #FDFDFD;
+        --tcolor-gray: #AFCEE9;
+        --tcolor-base1: #9C75A2;
+        --tcolor-base2: #42306A;
+        --tcolor-solid: #14092B;
+
+        --breakpoint-xs: 25rem;
+        --breakpoint-2xl: 100rem;
+        --breakpoint-3xl: 120rem;
+    }
+
+    body {
+        background-color: var(--tcolor-white);
+        color: var(--tcolor-solid);
+        font-family: "LINE Seed Sans TH", system-ui, sans-serif;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+}
+
+/* === text === */
+
+.txt-data {
+    font-weight: bold;
+    font-size: 48px;
+}
+
+.txt-label {
+    font-weight: normal;
+    font-size: 24px;
+}
+
+/* === text end === */
+
+/* === effect === */
+
+.card-shadow {
+    box-shadow: 
+    0px 16px 16px -8px rgba(66, 48, 106, 0.1),
+    0px 4px 4px -4px rgba(66, 48, 106, 0.05);
+}
+
+.icon-colored {
+    background-color: var(--icon-color);
+    mask: var(--icon-url) no-repeat center;
+    mask-size: contain;
+    width: 100%;
+    height: 100%;
+}
+
+/* === effect end === */
+
+
+@layer component {
+
+    /* === light-card === */
+
+    /* light-card color setup */
+    .light-card--high {
+        --lc-bg: #F5C47F;
+        --lc-acc1: #EE9211;
+        --lc-acc2: #FFB143;
+        --lc-acc3: #FFBD61;
+    }
+
+    .light-card--mid {
+        --lc-bg: #FADB85;
+        --lc-acc1: #EFB619;
+        --lc-acc2: #FBC633;
+        --lc-acc3: #FFD152;
+    }
+
+    .light-card--low {
+        --lc-bg: #FFF3C2;
+        --lc-acc1: #FAD646;
+        --lc-acc2: #FBDE68;
+        --lc-acc3: #FFE993;
+    }
+
+    .light-card--none {
+        --lc-bg: var(--tcolor-white);
+        --lc-acc1: #CAC870;
+        --lc-acc2: #E9E793;
+        --lc-acc3: #FDFBCE;
+    } 
+
+    /* === light-card end === */
+
+    /* === status-card === */
+
+    .color-active-state {
+        --cur-state-dark: #69A13E;
+        --cur-state-light: #9AED5A;
+        --ncur-state-dark: #D53A2C;
+        --ncur-state-light: #FB594A;
+    }
+
+    .color-inactive-state {
+        --cur-state-dark: #D53A2C;
+        --cur-state-light: #FB594A;
+        --ncur-state-dark: #69A13E;
+        --ncur-state-light: #9AED5A;
+    }
+
+    .color-process-state {
+        --cur-state-dark: var(--tcolor-base2);
+        --cur-state-light: #000;
+        --ncur-state-dark: #000;
+        --ncur-state-light: #000;
+    }
+
+    /* === status-card end === */
+
+    /* === raining-card === */
+
+    .color-nraining {
+        --rcolor-text: var(--tcolor-solid);
+        --rcolor-bg: var(--tcolor-gray);
+        --rcolor-cloud: var(--tcolor-white);
+        --rcolor-border: #8EBADF;
+    }
+
+    .color-raining {
+        --rcolor-text: var(--tcolor-white);
+        --rcolor-bg: #0D3251;
+        --rcolor-cloud: #1764A5;
+        --rcolor-border: #051726;
+    }
+
+    /* === raining-card end === */
+}
